@@ -50,6 +50,10 @@
   --ifm-global-radius: 4px;
   --ifm-color-emphasis-300: var(--cw-border);
   --ifm-table-stripe-background: var(--cw-surface-subtle);
+  /* Infima's 0.75rem all round is loose for a dense table. GitHub's proportions
+     instead, tighter vertically than horizontally. Kept in step with the Canvas
+     output by hand: getTableStyles in lib/convert/markdown-to-html.js. */
+  --ifm-table-cell-padding: 0.4rem 0.8rem;
   --doc-sidebar-width: 17rem;
 
   /* Backgrounds */

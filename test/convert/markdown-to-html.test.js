@@ -83,14 +83,14 @@ describe('markdownToHtml tables', () => {
     assert.ok(
       html.includes(
         `<th style="border: 1px solid ${border}; ` +
-          `border-bottom: 2px solid ${border}; padding: .75em; ` +
+          `border-bottom: 2px solid ${border}; padding: .4em .8em; ` +
           `background: ${stripe};">A</th>`,
       ),
       `Header cell came out unexpected:\n${html}`,
     );
     assert.ok(
       html.includes(
-        `<td style="border: 1px solid ${border}; padding: .75em;">`,
+        `<td style="border: 1px solid ${border}; padding: .4em .8em;">`,
       ),
       `Body cell came out unexpected:\n${html}`,
     );
