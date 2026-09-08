@@ -244,7 +244,7 @@ program
   .description('Merge two items in a module into one')
   .option(
     '-s, --source <path>',
-    'Source file, appended then deleted (with --target, skips the interactive prompts)',
+    'Source file, appended under its title then deleted (with --target, skips the interactive prompts)',
   )
   .option('-t, --target <path>', 'Path to target file (keeps frontmatter)')
   .option(

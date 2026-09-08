@@ -233,7 +233,7 @@ function registerItemCommands({ register, workspaceRoot }) {
   register('course.mergeItems', async () => {
     if (!validateWorkspace()) return;
     const sourcePath = await pickItemPath(
-      'Source item (appended, then deleted)',
+      'Source item (appended under its title, then deleted)',
     );
     if (!sourcePath) return;
     // No seed for the target: the active file is the natural source, and

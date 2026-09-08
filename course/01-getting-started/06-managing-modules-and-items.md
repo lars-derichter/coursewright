@@ -63,6 +63,10 @@ item that **receives** its content and choose **Merge with Source**. A dialog
 names both files and says again that the source is deleted. Page and assignment
 rows only.
 
+The source's content lands at the end of the target, under a `##` heading with
+the source's title, so you can see where the merged-in part begins. Rewrite or
+delete that heading once the page reads as one.
+
 The Canvas page behind the source is left alone, and sits there until you prune
 it.
 

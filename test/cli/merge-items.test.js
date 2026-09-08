@@ -146,8 +146,104 @@ describe('_mergeFiles', () => {
     const body = parsed.content.trim();
     assert.ok(body.includes('Line 1\nLine 2'));
     assert.ok(body.includes('Line 3\nLine 4'));
-    // Should have a blank line between the two parts
-    assert.ok(body.includes('Line 2\n\nLine 3'));
+    // A blank line on either side of the seam the heading marks
+    assert.ok(body.includes('Line 2\n\n## Second\n\nLine 3'));
+  });
+
+  it('heads the appended body with the source title, at level 2', async () => {
+    // The seam. Level 1 is the page heading and comes from the target's
+    // frontmatter, so the merged-in material opens a section of that page.
+    createMdFile(tmpDir, '01-first.md', { title: 'First' }, 'Content A');
+    createMdFile(tmpDir, '02-second.md', { title: 'Second' }, 'Content B');
+
+    const targetPath = path.join(tmpDir, '01-first.md');
+    const sourcePath = path.join(tmpDir, '02-second.md');
+
+    await _mergeFiles(targetPath, sourcePath, tmpDir, isolated(tmpDir));
+
+    const body = matter(fs.readFileSync(targetPath, 'utf8')).content.trim();
+    assert.equal(body, 'Content A\n\n## Second\n\nContent B');
+  });
+
+  it('falls back to the filename when the source has no title', async () => {
+    createMdFile(tmpDir, '01-first.md', { title: 'First' }, 'Content A');
+    createMdFile(
+      tmpDir,
+      '02-second-page.md',
+      { canvas_type: 'page' },
+      'Content B',
+    );
+
+    const targetPath = path.join(tmpDir, '01-first.md');
+    const sourcePath = path.join(tmpDir, '02-second-page.md');
+
+    await _mergeFiles(targetPath, sourcePath, tmpDir, isolated(tmpDir));
+
+    // `displayTitle`: prefix off, hyphens to spaces, sentence case — the same
+    // name the scanner would have shown for that file.
+    const body = matter(fs.readFileSync(targetPath, 'utf8')).content.trim();
+    assert.equal(body, 'Content A\n\n## Second page\n\nContent B');
+  });
+
+  it('keeps the emoji a source title carries', async () => {
+    // Page titles open with a page-type emoji in this project, and the heading
+    // is the title: an emoji-free seam would name a page that does not exist.
+    createMdFile(tmpDir, '01-first.md', { title: '📘 First' }, 'Content A');
+    createMdFile(tmpDir, '02-alerts.md', { title: '📘 Alerts' }, 'Content B');
+
+    const targetPath = path.join(tmpDir, '01-first.md');
+    const sourcePath = path.join(tmpDir, '02-alerts.md');
+
+    await _mergeFiles(targetPath, sourcePath, tmpDir, isolated(tmpDir));
+
+    const parsed = matter(fs.readFileSync(targetPath, 'utf8'));
+    assert.equal(
+      parsed.content.trim(),
+      'Content A\n\n## 📘 Alerts\n\nContent B',
+    );
+    assert.equal(parsed.data.title, '📘 First');
+  });
+
+  it('writes the heading alone when the source body is empty', async () => {
+    // What `new-item` scaffolds: frontmatter, and nothing under it. A heading
+    // with nothing beneath it still records that the page was merged in, which
+    // beats losing its name without a word.
+    createMdFile(tmpDir, '01-first.md', { title: 'First' }, 'Content A');
+    fs.writeFileSync(
+      path.join(tmpDir, '02-second.md'),
+      '---\ntitle: Second\n---\n',
+      'utf8',
+    );
+
+    const targetPath = path.join(tmpDir, '01-first.md');
+    const sourcePath = path.join(tmpDir, '02-second.md');
+
+    await _mergeFiles(targetPath, sourcePath, tmpDir, isolated(tmpDir));
+
+    const body = matter(fs.readFileSync(targetPath, 'utf8')).content.trim();
+    assert.equal(body, 'Content A\n\n## Second');
+  });
+
+  it('merges into an empty target without a leading blank line', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '01-first.md'),
+      '---\ntitle: First\n---\n',
+      'utf8',
+    );
+    createMdFile(tmpDir, '02-second.md', { title: 'Second' }, 'Content B');
+
+    const targetPath = path.join(tmpDir, '01-first.md');
+    const sourcePath = path.join(tmpDir, '02-second.md');
+
+    await _mergeFiles(targetPath, sourcePath, tmpDir, isolated(tmpDir));
+
+    // The whole file, because the point of this one is the padding: the body
+    // has to open at the heading, the way any other page opens at its first
+    // line.
+    assert.equal(
+      fs.readFileSync(targetPath, 'utf8'),
+      '---\ntitle: First\n---\n\n## Second\n\nContent B\n',
+    );
   });
 
   it('carries the renumber into the state file it was handed', async () => {

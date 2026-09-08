@@ -286,17 +286,19 @@ npx course delete-item [options]
 
 ### `merge-items`
 
-Merge two items in a module into one.
+Merge two items in a module into one. The source's body is appended to the
+target's under a `##` heading carrying the source's title, so the merged-in
+material keeps its name and its start is visible on the page.
 
 ```bash
 npx course merge-items [options]
 ```
 
-| Flag                  | Description                                                                             |
-| --------------------- | --------------------------------------------------------------------------------------- |
-| `-s, --source <path>` | Source file, appended then deleted (with `--target`, skips the interactive prompts)     |
-| `-t, --target <path>` | Path to target file (keeps frontmatter)                                                 |
-| `-y, --yes`           | Confirm deleting the source without prompting (required with `--source` and `--target`) |
+| Flag                  | Description                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| `-s, --source <path>` | Source file, appended under its title then deleted (with `--target`, skips the interactive prompts) |
+| `-t, --target <path>` | Path to target file (keeps frontmatter)                                                             |
+| `-y, --yes`           | Confirm deleting the source without prompting (required with `--source` and `--target`)             |
 
 ### `split-item`
 

@@ -275,9 +275,12 @@ updates both the filename and the `title` in its frontmatter. Delete one with
 Merging takes two right-clicks, on page and assignment rows only: **Merge: Set
 as Source** on the item that gets deleted, then **Merge with Source** on the
 item that keeps the content. A dialog names both files and confirms the source
-is deleted. Splitting runs the other way: put the cursor on the last line that
-should stay in the current file, right-click in the editor and choose **Course:
-Split Item at Cursor**, then give the new item a title.
+is deleted. The source's body lands at the end of the target's, under a `##`
+heading carrying the source's title, so you can see where the merged-in material
+starts and rename or delete that heading afterwards. Splitting runs the other
+way: put the cursor on the last line that should stay in the current file,
+right-click in the editor and choose **Course: Split Item at Cursor**, then give
+the new item a title.
 
 None of this touches Canvas either. An item you delete or merge away stays on
 Canvas until a prune removes it, and every sync run names it under

@@ -24,6 +24,16 @@
   which the preview site, Canvas and both exports already show as the page
   heading, so deleting it was the first edit an author made in every new file.
 
+- **Course: Merge Items** and `npx course merge-items` introduce the merged-in
+  body with the source item's title as a `##` heading, taken from its
+  frontmatter or, failing that, from its filename. The source's own `# Title`
+  used to travel along inside its body and marked where the appended material
+  began; with no H1 in a page body that seam went to the bin with the source
+  file, leaving two pages' prose to run together under one title. Level 2
+  because level 1 is the page heading and comes from the target's frontmatter.
+  An empty body on either side is left out rather than padded with blank lines,
+  so merging a page that was still only frontmatter appends its heading alone.
+
 ## 1.1.1 (2026-09-01)
 
 - **Course: New Item** and `npx course new-item` create a discussion. The list
