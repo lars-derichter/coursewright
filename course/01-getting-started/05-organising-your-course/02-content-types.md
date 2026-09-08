@@ -3,8 +3,6 @@ title: 📘 Content Types
 canvas_type: page
 ---
 
-# Content Types
-
 A `canvas_type` field at the top of a markdown file, in the frontmatter, says
 what kind of Canvas item that file becomes. There are seven. Four hold their
 content here: a page, an assignment and a discussion are written in the markdown

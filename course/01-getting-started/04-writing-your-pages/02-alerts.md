@@ -3,8 +3,6 @@ title: 📘 Alerts
 canvas_type: page
 ---
 
-# Alerts
-
 Alerts are coloured callout boxes that help important information stand out on
 the page. They are a great way to highlight tips, warnings, or key details for
 your students. This project supports six types of alerts, and they work in every

@@ -1,10 +1,9 @@
 ---
 slug: /
-title: Coursewright
+title: Write Your Course in Markdown, Publish It Anywhere
+sidebar_label: Coursewright
 sidebar_position: 0
 ---
-
-# Write Your Course in Markdown, Publish It Anywhere
 
 Course material tends to live wherever it was last edited: an LMS editor, a Word
 file, a slide deck. **Coursewright** makes plain markdown files on your computer

@@ -3,8 +3,6 @@ title: 📘 Canvas Syncing
 canvas_type: page
 ---
 
-# Canvas Syncing
-
 Push your content to Canvas, pull edits back into your files, or do both in one
 run. The Course Manager panel runs those same commands, and the report lands in
 the Coursewright terminal, where you read it and answer what the CLI asks.

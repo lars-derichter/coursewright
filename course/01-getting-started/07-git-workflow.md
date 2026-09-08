@@ -3,8 +3,6 @@ title: 📘 Git Workflow
 canvas_type: page
 ---
 
-# Git Workflow
-
 By now you have Git installed, a GitHub account, and a local copy of your course
 project. This page shows you how to use Git as part of your daily workflow:
 saving your work, backing it up to GitHub, and getting things back when you need

@@ -3,8 +3,6 @@ title: ⚙️ Your Course Project
 canvas_type: page
 ---
 
-# Your Course Project
-
 Coursewright is a **template**: you make your own copy, and your copy is yours.
 Nothing you do to it touches the original, and you can make one copy per course.
 On GitHub each copy is a **repository**, one project’s files together with their

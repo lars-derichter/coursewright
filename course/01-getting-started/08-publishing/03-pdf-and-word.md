@@ -4,8 +4,6 @@ canvas_type: page
 export: true
 ---
 
-# A PDF or Word Handout
-
 Sometimes the course has to leave the screen: an exam on paper, a handout for
 one lesson, a chapter to read offline. Any page, any module, or your whole
 course turns into a polished PDF or an editable Word document, out of the same

@@ -3,8 +3,6 @@ title: 📘 Three Ways to Publish
 canvas_type: page
 ---
 
-# Three Ways to Publish
-
 The files you have been writing publish three ways, and you pick the route your
 course needs today. The other two stay open: all three read the same files, and
 none of them locks the others out.

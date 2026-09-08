@@ -1,8 +1,7 @@
 ---
+title: Course Content Licence
 unlisted: true
 ---
-
-# Course Content Licence
 
 The course materials in this folder are licensed under the
 [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International licence (CC BY-NC-SA 4.0)](https://creativecommons.org/licenses/by-nc-sa/4.0/),

@@ -6,8 +6,6 @@ require_initial_post: true
 published: true
 ---
 
-# Which Route Will You Take?
-
 You have seen the three routes your files can take: the course website, a PDF or
 Word handout, and Canvas. The practice assignment asked you to take one of them.
 Now put it in words.

@@ -3,8 +3,6 @@ title: 📘 Working With an AI Assistant
 canvas_type: page
 ---
 
-# Working With an AI Assistant
-
 Writing a course is a lot of small, repetitive jobs: drafting pages, keeping
 your style consistent, building quizzes, checking for broken links. An AI
 assistant that works inside your editor can take on much of that, and this

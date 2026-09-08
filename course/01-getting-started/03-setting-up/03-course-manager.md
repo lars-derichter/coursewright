@@ -3,8 +3,6 @@ title: ⚙️ The Course Manager
 canvas_type: page
 ---
 
-# The Course Manager
-
 The Course Manager extension ships with your project and puts your course in VS
 Code’s sidebar, so every step from here on is a click, with the terminal there
 for anyone who would rather type. Your project folder should be the one open in

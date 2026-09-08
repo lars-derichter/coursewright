@@ -3,8 +3,6 @@ title: ⚠️ Before You Publish to Canvas
 canvas_type: page
 ---
 
-# Before You Publish to Canvas
-
 Publishing is the one part of this tool that can lose work, so it gets its own
 page before the page that shows you how.
 

@@ -3,8 +3,6 @@ title: 📘 How This Works
 canvas_type: page
 ---
 
-# How This Works
-
 You are looking at a course built with Coursewright. Every page in this module
 is a plain markdown file in a folder on a computer. The same files are published
 as this website, exported as a PDF or Word handout, or pushed to Canvas.

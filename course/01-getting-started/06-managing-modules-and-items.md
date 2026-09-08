@@ -3,8 +3,6 @@ title: 📘 Managing Modules and Items
 canvas_type: page
 ---
 
-# Managing Modules and Items
-
 As your course grows you add pages, shuffle them around, and clean up what you
 no longer need. The Course Manager panel does all of it, and it renumbers the
 files for you, so you never rename anything by hand to close a gap.

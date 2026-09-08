@@ -46,6 +46,16 @@
   recognised for exactly those copies, which are the ones that still need the
   replacement offer.
 
+- The tutorial module and this project's own landing page no longer repeat their
+  title as the first line of the body. On the published site each page heading
+  now carries the page-type emoji its title has always had, and in a PDF, Word
+  or markdown export the chapter headings match the sidebar instead of dropping
+  the sign. The landing page keeps its headline as its title, with
+  `sidebar_label: Coursewright` so the sidebar entry stays short, and the
+  licence page gains the title it never had. A course syncing this repository to
+  Canvas sees every tutorial page reported as modified locally once, because the
+  fingerprint covers the whole file.
+
 ## 1.1.1 (2026-09-01)
 
 - **Course: New Item** and `npx course new-item` create a discussion. The list

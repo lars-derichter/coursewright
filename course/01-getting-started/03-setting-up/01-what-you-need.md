@@ -3,8 +3,6 @@ title: ⚙️ What You Need
 canvas_type: page
 ---
 
-# What You Need
-
 Four things, all free: three programs and one account. You install them once and
 then forget about them. If you already have them, go straight to
 [Your Course Project](02-your-course-project.md).

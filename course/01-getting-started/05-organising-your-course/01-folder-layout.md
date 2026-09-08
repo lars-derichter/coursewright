@@ -3,8 +3,6 @@ title: 📘 Folder Layout
 canvas_type: page
 ---
 
-# Folder Layout
-
 All your course content lives in the `course/` folder. How you organise files
 and folders here decides where everything appears in every output, with no
 configuration at all.

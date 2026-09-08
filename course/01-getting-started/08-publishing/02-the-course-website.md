@@ -3,8 +3,6 @@ title: 📘 The Course Website
 canvas_type: page
 ---
 
-# The Course Website
-
 The preview you have been reading all along is already a website. Publishing it
 takes one setting on GitHub and no command at all.
 

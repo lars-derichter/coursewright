@@ -10,8 +10,6 @@ lock_at: "2026-10-07T21:59:00Z"
 published: true
 ---
 
-# Practice Assignment
-
 You have made it through the Getting Started module. Nice work. Now try it
 yourself.
 
