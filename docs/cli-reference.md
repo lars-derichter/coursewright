@@ -336,6 +336,31 @@ npx course build-glossary [options]
 `--check` is the one built for CI or a pre-push hook. See the
 [lesson workflow](lesson-workflow.md) for the glossary file format.
 
+## Checks
+
+### `check-links`
+
+Report every relative markdown or image link whose target does not exist on
+disk.
+
+```bash
+npx course check-links [options]
+```
+
+| Flag              | Description                                                   |
+| ----------------- | ------------------------------------------------------------- |
+| `--root <folder>` | Scan this folder instead of the configured roots (repeatable) |
+
+The roots are `checks.links.roots` in `course.config.yml`, `course` alone by
+default. `validate` already resolves the links between the items it scans; this
+is the plain filesystem check beside it. It reads every `.md` file under each
+root, `course/index.md`, `course/LICENSE.md` and folders nested deeper than a
+module takes included, and asks of each relative link only whether the target
+exists. Links in code blocks and inline code are ignored, and external URLs,
+`mailto:` and site-absolute paths are left alone. Exits non-zero when any link
+is broken. See [pre-ship checks](customisation.md#pre-ship-checks) for the
+config key.
+
 ## Search
 
 ### `search`

@@ -301,6 +301,19 @@ program
   .action(require('./build-glossary'));
 
 program
+  .command('check-links')
+  .description(
+    'Report relative markdown and image links whose target does not exist',
+  )
+  .option(
+    '--root <folder>',
+    'Scan this folder instead of the configured roots (repeatable)',
+    require('./check-links').collectRoot,
+    [],
+  )
+  .action(require('./check-links'));
+
+program
   .command('export [paths...]')
   .description(
     'Export course materials to PDF, DOCX or plain markdown (PDF and DOCX need pandoc and typst)',

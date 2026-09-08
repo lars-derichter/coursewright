@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- `npx course check-links` reports every relative markdown or image link whose
+  target does not exist on disk, under the folders `checks.links.roots` names
+  (`course` alone by default) or a repeated `--root`. `validate` resolves the
+  links between the items it scans and nothing else, so `course/index.md`,
+  `course/LICENSE.md`, a folder nested deeper than a module takes and any
+  markdown kept outside `course/` went unchecked; this is the plain filesystem
+  check beside it. Code blocks and inline code are ignored, external URLs and
+  site-absolute paths are left alone, and the run lists every broken link and
+  exits non-zero when there is one.
+
 - `course.config.yml` takes a `checks:` section for the pre-ship checks.
   `links.roots` lists the folders `check-links` scans for broken relative links,
   `course` alone unless a course says otherwise; `extra` lists the subcommands

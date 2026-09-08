@@ -105,6 +105,7 @@ const COMMAND_SYNC_STATE_POLICY = {
   validate: NEVER_OPENS,
   search: NEVER_OPENS,
   'build-glossary': NEVER_OPENS,
+  'check-links': NEVER_OPENS,
   'export-toc': NEVER_OPENS,
   'reset-sync-state': NEVER_OPENS,
   'reset-canvas': NEVER_OPENS,

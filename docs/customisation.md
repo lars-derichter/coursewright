@@ -296,7 +296,8 @@ here when you keep markdown students read elsewhere. `extra` lists subcommands
 `npx course`, so a command your course registered itself is gated by the same
 command and the same hook. An entry the CLI does not know fails the run, which
 is the point: a typo here should not pass as green. Both keys are optional, and
-a value of the wrong shape is ignored with a warning naming it.
+a value of the wrong shape is ignored with a warning naming it. The
+[CLI reference](cli-reference.md#checks) has the two commands and their flags.
 
 ## Licence
 
