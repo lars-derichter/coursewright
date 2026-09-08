@@ -1,9 +1,10 @@
 name: Course checks
 
-# What a course project is asked on every push: does the material still
-# validate, and does the site still build. Both questions are about content the
-# author owns, which is what separates this workflow from `test.yml` — that one
-# tests the tooling, and is gated to the repository the tooling lives in.
+# What a course project is asked on every push: does the material still pass
+# its pre-ship checks, and does the site still build. Both questions are about
+# content the author owns, which is what separates this workflow from
+# `test.yml` — that one tests the tooling, and is gated to the repository the
+# tooling lives in.
 #
 # Deliberately ungated, so it runs here too. This repository is the only place
 # a break in this file can be caught before every course inherits it, and
@@ -28,10 +29,13 @@ jobs:
           node-version: 24
       - run: npm ci
 
-      # Frontmatter, links and file references. Local and offline — it never
-      # reaches Canvas — and it fails the run on an error while letting a
-      # warning through, so a course is not held to more than it should be.
-      - run: npx course validate
+      # Every pre-ship check: frontmatter, links and file references through
+      # `validate`, glossary freshness when the course keeps a glossary, the
+      # plain link check, and whatever `checks.extra` in course.config.yml adds.
+      # Local and offline — it never reaches Canvas — and `validate` fails the
+      # run on an error while letting a warning through, so a course is not
+      # held to more than it should be.
+      - run: npx course check
 
       # The same build GitHub Pages runs, so a page that cannot compile is
       # caught on the push that wrote it. Worth its own step precisely because

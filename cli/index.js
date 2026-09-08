@@ -314,6 +314,13 @@ program
   .action(require('./check-links'));
 
 program
+  .command('check')
+  .description(
+    'Run every pre-ship check: validate, glossary freshness, links, and checks.extra from course.config.yml',
+  )
+  .action(require('./check'));
+
+program
   .command('export [paths...]')
   .description(
     'Export course materials to PDF, DOCX or plain markdown (PDF and DOCX need pandoc and typst)',

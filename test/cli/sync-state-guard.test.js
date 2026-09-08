@@ -340,6 +340,7 @@ describe('the command-to-policy table', () => {
     assert.deepEqual(named(READS_ANY_COURSE), ['export', 'init']);
     assert.deepEqual(named(NEVER_OPENS), [
       'build-glossary',
+      'check',
       'check-links',
       'export-toc',
       'reset-canvas',

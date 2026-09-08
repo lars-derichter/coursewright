@@ -59,7 +59,7 @@ they never wrote. Both jobs in it are now guarded by
 rather than the whole `owner/name` is what keeps a fork working: a contributor's
 fork keeps the name, a course does not. `course-checks.yml` is the workflow that
 runs in a course, and it asks about the course rather than about the tooling —
-`npx course validate` and `npm run build`. That one is ungated, so a break in it
+`npx course check` and `npm run build`. That one is ungated, so a break in it
 fails here before every course inherits it.
 
 The glob in that script is double-quoted (`"test/**/*.test.js"`), and it has to

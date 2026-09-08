@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- `npx course check` runs every pre-ship check in one go and exits non-zero
+  naming the ones that failed: `validate`; `build-glossary --check` when the
+  course keeps a glossary at the default path, skipped and said so when it does
+  not, since the glossary command fails without one; `check-links`; and every
+  entry of `checks.extra` in `course.config.yml`. Each runs as its own process,
+  so one failure does not stop the rest. `npm run hooks:install` installs it as
+  a git pre-push hook, and `.github/workflows/course-checks.yml` runs it in
+  place of `validate` alone, so a course's CI now covers glossary freshness, the
+  plain link check and the course's own extras as well.
+
 - `npx course check-links` reports every relative markdown or image link whose
   target does not exist on disk, under the folders `checks.links.roots` names
   (`course` alone by default) or a repeated `--root`. `validate` resolves the

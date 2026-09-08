@@ -300,10 +300,10 @@ Do not read the refusal as a guard on everything. Two commands read the
 mismatched file and carry on, and neither writes to Canvas: `init`, which
 repairs it, and `export`, which only wants the ids to footnote cross-links. A
 command that never opens the file is not stopped at all: `setup`, `validate`,
-`search`, `build-glossary`, `check-links`, `export-toc`, `reset-sync-state` and
-`reset-canvas`. That last one is the one to watch. It deletes everything in the
-course `.env` names, and a mismatch is the situation in which `.env` may not be
-naming the course you think it is.
+`search`, `build-glossary`, `check`, `check-links`, `export-toc`,
+`reset-sync-state` and `reset-canvas`. That last one is the one to watch. It
+deletes everything in the course `.env` names, and a mismatch is the situation
+in which `.env` may not be naming the course you think it is.
 
 ### Starting Fresh, or Switching Canvas Courses
 

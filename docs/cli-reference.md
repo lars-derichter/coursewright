@@ -338,6 +338,24 @@ npx course build-glossary [options]
 
 ## Checks
 
+### `check`
+
+Run every pre-ship check and exit non-zero if any failed.
+
+```bash
+npx course check
+```
+
+No flags beyond `-h`. The checks run in this order, each as its own process so
+one failure does not stop the rest: `validate`; `build-glossary --check` when
+`sources/reference-materials/glossary.yml` exists, reported as skipped when it
+does not; `check-links`; then every entry of `checks.extra` in
+`course.config.yml`, split on whitespace into a subcommand and its flags. An
+entry the CLI does not know fails the run. `npm run hooks:install` installs
+`scripts/pre-push`, which runs this command before every `git push`;
+`git push --no-verify` bypasses it. The course CI workflow,
+`.github/workflows/course-checks.yml`, runs it too.
+
 ### `check-links`
 
 Report every relative markdown or image link whose target does not exist on
@@ -479,15 +497,17 @@ npx course --quiet push     # only show errors
 
 From the root `package.json`.
 
-| Script                   | Runs                                       | Extension equivalent             |
-| ------------------------ | ------------------------------------------ | -------------------------------- |
-| `npm start`              | `docusaurus start`, the live preview       | **Course: Preview**              |
-| `npm run build`          | `docusaurus build`, the production build   | none                             |
-| `npm run serve`          | `docusaurus serve`, serves that build      | none                             |
-| `npm run format`         | `prettier --write .`                       | none                             |
-| `npm run lint`           | `eslint .`                                 | none                             |
-| `npm run vscode:install` | Packages and installs the extension itself | none (it installs the extension) |
-| `npm test`               | `node --test "test/**/*.test.js"`          | none                             |
+| Script                   | Runs                                          | Extension equivalent             |
+| ------------------------ | --------------------------------------------- | -------------------------------- |
+| `npm start`              | `docusaurus start`, the live preview          | **Course: Preview**              |
+| `npm run build`          | `docusaurus build`, the production build      | none                             |
+| `npm run serve`          | `docusaurus serve`, serves that build         | none                             |
+| `npm run format`         | `prettier --write .`                          | none                             |
+| `npm run lint`           | `eslint .`                                    | none                             |
+| `npm run vscode:install` | Packages and installs the extension itself    | none (it installs the extension) |
+| `npm test`               | `node --test "test/**/*.test.js"`             | none                             |
+| `npm run check`          | `npx course check`, every pre-ship check      | none                             |
+| `npm run hooks:install`  | Installs `scripts/pre-push` into `.git/hooks` | none                             |
 
 `npm start` is the only one the extension covers. `npm install`, the build, the
 formatter and every git command are yours to type.

@@ -337,6 +337,25 @@ The command palette has a matching **Course: Build Glossary** entry. It is
 deliberately not in the Course Manager tree, in its title bar or in a
 right-click menu, so no stray click there can ever start it.
 
+### Pre-Ship Checks
+
+```bash
+npx course check          # validate, glossary freshness, links, and your own extras
+npx course check-links    # the link check alone, over the configured roots
+npm run hooks:install     # run `check` before every git push
+```
+
+`check` runs every check a course should pass before a push, each as its own
+process so one failure does not stop the others, and exits non-zero naming the
+ones that failed: `validate`; `build-glossary --check` when the course keeps a
+glossary at `sources/reference-materials/glossary.yml`, reported as skipped when
+it does not; `check-links`; then whatever `checks.extra` in `course.config.yml`
+adds. `hooks:install` copies `scripts/pre-push` into `.git/hooks`, so a push
+that would ship a broken link or a stale glossary page stops on your machine
+rather than in CI; `git push --no-verify` gets past it when you have to.
+`.github/workflows/course-checks.yml` runs the same command on every push. See
+[pre-ship checks](customisation.md#pre-ship-checks) for the two config keys.
+
 ### Searching Course Content
 
 **Course: Search...** sits in the Course Manager panel's title bar. It asks for

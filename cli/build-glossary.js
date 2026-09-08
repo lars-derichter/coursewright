@@ -337,6 +337,8 @@ async function buildGlossary(options = {}) {
 }
 
 module.exports = buildGlossary;
+// `check` reads this to decide whether a course has a glossary to keep fresh.
+module.exports.DEFAULT_GLOSSARY_PATH = DEFAULT_GLOSSARY_PATH;
 // Exported for unit tests.
 module.exports.DEFAULT_CONFIG = DEFAULT_CONFIG;
 module.exports.defaultConfigFor = defaultConfigFor;

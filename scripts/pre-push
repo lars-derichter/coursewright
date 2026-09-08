@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# Pre-push hook: run `npx course check` and block the push when it fails.
+# That is validate, glossary freshness when the course keeps a glossary, the
+# link check, and whatever `checks.extra` in course.config.yml adds.
+#
+# Installed by: npm run hooks:install (copies this file to .git/hooks/pre-push).
+# Re-run that command after editing this script.
+#
+# Bypass in an emergency with: git push --no-verify
+
+set -e
+
+# Resolve the repo root so the hook works regardless of the current directory.
+ROOT=$(git rev-parse --show-toplevel)
+cd "$ROOT"
+
+echo "pre-push: running course checks..."
+node cli/index.js check
