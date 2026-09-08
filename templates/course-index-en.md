@@ -1,10 +1,8 @@
 ---
 slug: /
-title: Course Home
+title: Welcome
 sidebar_position: 0
 ---
-
-# Welcome
 
 <!--
   This is the home page of your course site: the first thing anyone sees when

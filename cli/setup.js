@@ -25,6 +25,7 @@ const {
   loadCourseConfig,
   _clearCache,
 } = require('../lib/config/course-config');
+const { parseFrontmatter } = require('../lib/convert/frontmatter');
 
 const CONFIG_FILE = path.join(PROJECT_ROOT, 'course.config.yml');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
@@ -45,12 +46,19 @@ const COURSE_INDEX_FILE = path.join(PROJECT_ROOT, 'course', 'index.md');
 const TUTORIAL_MODULE = path.join(PROJECT_ROOT, 'course', '01-getting-started');
 
 /**
- * The H1 of the shipped `course/index.md`. Upstream that file is the project's
- * own landing page — this repo publishes its `course/` to GitHub Pages — so a
- * course that still carries it is publishing a pitch for the tooling to its
- * students, and setup should offer to replace it.
+ * How the shipped `course/index.md` names itself. Upstream that file is the
+ * project's own landing page, since this repo publishes its `course/` to GitHub
+ * Pages, so a course that still carries it is publishing a pitch for the tooling
+ * to its students and setup should offer to replace it.
+ *
+ * Two forms carry that name. Since the page body lost its `# Title`, the name is
+ * the frontmatter `title`; before that it was the body's H1. Both stay
+ * recognised because `course/` is a protected directory in
+ * `update-from-upstream.sh`: a course project that pulls this CLI keeps the
+ * `course/index.md` it already had, so the older file is exactly the one that
+ * still needs the offer.
  */
-const TOOLING_INDEX_HEADING = 'Write Your Course in Markdown';
+const TOOLING_INDEX_TITLE = 'Write Your Course in Markdown';
 
 /** Where the tutorial module stays readable after a course deletes its copy. */
 const TUTORIAL_UPSTREAM_URL =
@@ -248,13 +256,27 @@ function isToolingReadme(content) {
 /**
  * True when course/index.md is still the tooling's own landing page rather than
  * a course home.
+ *
+ * The frontmatter title answers it for the current file, the body's H1 for the
+ * copy an older course project still has. A frontmatter block YAML cannot read
+ * is not an answer either way, so it falls through to the heading rather than
+ * throwing: the caller only wants to know whether it may overwrite the file.
  */
 function isToolingIndex(content) {
   if (content == null) return true;
+  try {
+    const { data } = parseFrontmatter(content);
+    if (
+      typeof data.title === 'string' &&
+      data.title.trim().startsWith(TOOLING_INDEX_TITLE)
+    ) {
+      return true;
+    }
+  } catch {
+    // Unparseable frontmatter: the H1 below is all there is to go on.
+  }
   const heading = content.match(/^#\s+(.+)$/m);
-  return (
-    Boolean(heading) && heading[1].trim().startsWith(TOOLING_INDEX_HEADING)
-  );
+  return Boolean(heading) && heading[1].trim().startsWith(TOOLING_INDEX_TITLE);
 }
 
 /**

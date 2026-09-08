@@ -1,10 +1,8 @@
 ---
 slug: /
-title: Cursushome
+title: Welkom
 sidebar_position: 0
 ---
-
-# Welkom
 
 <!--
   Dit is de homepagina van je cursussite: het eerste wat iemand ziet die de

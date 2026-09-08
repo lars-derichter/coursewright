@@ -34,6 +34,18 @@
   An empty body on either side is left out rather than padded with blank lines,
   so merging a page that was still only frontmatter appends its heading alone.
 
+- `npx course setup` recognises the shipped course home by its frontmatter title
+  as well as by the H1 that older copies carry, and the two course-home
+  templates it installs put the welcome in the title (`title: Welcome`,
+  `title: Welkom`) with no heading in the body. The frontmatter title is the
+  page heading in every output now, so the landing page this project publishes
+  as its own site carries no `# Title`, while the check deciding whether
+  `course/index.md` is still that page read nothing else. `course/` is a
+  protected directory in `update-from-upstream.sh`, so a course project that
+  pulls this release keeps the landing page it already had: the H1 form stays
+  recognised for exactly those copies, which are the ones that still need the
+  replacement offer.
+
 ## 1.1.1 (2026-09-01)
 
 - **Course: New Item** and `npx course new-item` create a discussion. The list

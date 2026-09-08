@@ -245,8 +245,75 @@ describe('isPristine', () => {
 });
 
 describe('isToolingIndex', () => {
+  it('recognises the shipped landing page by its frontmatter title', () => {
+    const page = [
+      '---',
+      'slug: /',
+      'title: Write Your Course in Markdown, Publish It Anywhere',
+      'sidebar_label: Coursewright',
+      '---',
+      '',
+      'Course material tends to live wherever it was last edited.',
+      '',
+      '## The Problem It Solves',
+      '',
+      'An LMS editor is fine for a page or two.',
+      '',
+    ].join('\n');
+    assert.equal(isToolingIndex(page), true);
+  });
+
+  it('recognises the pre-1.2 landing page by its H1', () => {
+    const page = [
+      '---',
+      'slug: /',
+      'title: Coursewright',
+      '---',
+      '',
+      '# Write Your Course in Markdown, Publish It Anywhere',
+      '',
+      'Course material tends to live wherever it was last edited.',
+      '',
+    ].join('\n');
+    assert.equal(isToolingIndex(page), true);
+  });
+
   it('rejects a course home page', () => {
     assert.equal(isToolingIndex('# Welcome\n\nUse the sidebar.\n'), false);
+  });
+
+  it('rejects a course home whose frontmatter title is its own', () => {
+    const page = [
+      '---',
+      'slug: /',
+      'title: Welcome',
+      'sidebar_position: 0',
+      '---',
+      '',
+      'Use the sidebar to work through the modules.',
+      '',
+      '## How This Course Works',
+      '',
+    ].join('\n');
+    assert.equal(isToolingIndex(page), false);
+  });
+
+  it('falls back to the H1 when the frontmatter will not parse', () => {
+    const page = [
+      '---',
+      'title: [unclosed',
+      '  slug: /',
+      '---',
+      '',
+      '# Write Your Course in Markdown, Publish It Anywhere',
+      '',
+    ].join('\n');
+    assert.equal(isToolingIndex(page), true);
+  });
+
+  it('does not throw on a malformed frontmatter block', () => {
+    const page = '---\ntitle: [unclosed\n---\n\nUse the sidebar.\n';
+    assert.equal(isToolingIndex(page), false);
   });
 
   it('treats a missing course home as replaceable', () => {
