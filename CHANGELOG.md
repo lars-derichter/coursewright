@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 (2026-09-08)
 
 - The theme comment in the shipped `course.config.yml` pointed at
   `docs/customization.md`; the guide is `docs/customisation.md`. A course made
