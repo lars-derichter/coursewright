@@ -5,7 +5,7 @@ const {
   buildPlainMarkdown,
   preprocessPlainItem,
   buildPlainHeader,
-  ensureLeadingHeading,
+  prependTitleHeading,
   stripImages,
   stripHtmlComments,
   unlinkLocalLinks,
@@ -213,19 +213,29 @@ describe('buildPlainHeader', () => {
   });
 });
 
-describe('ensureLeadingHeading', () => {
-  it('keeps an existing heading and drops the blank lines above it', () => {
-    const out = ensureLeadingHeading(
-      '\n\n# Title\n\nBody',
-      page('m/p.md', 'Title'),
-      2,
-    );
-    assert.equal(out, '# Title\n\nBody');
+describe('prependTitleHeading', () => {
+  it('heads the body with the title at the requested level', () => {
+    const out = prependTitleHeading('Just body', page('m/p.md', 'Title'), 2);
+    assert.equal(out, '## Title\n\nJust body');
   });
 
-  it('generates a heading at the requested level when there is none', () => {
-    const out = ensureLeadingHeading('Just body', page('m/p.md', 'Title'), 2);
-    assert.equal(out, '## Title\n\nJust body');
+  it('uses the frontmatter title even when the body opens with a heading', () => {
+    const out = prependTitleHeading(
+      '# Other\n\nBody',
+      page('m/p.md', 'Title'),
+      1,
+    );
+    assert.equal(out, '# Title\n\n# Other\n\nBody');
+  });
+
+  it('keeps an emoji in the title intact', () => {
+    const out = prependTitleHeading('Body', page('m/p.md', '📘 Alerts'), 1);
+    assert.equal(out, '# 📘 Alerts\n\nBody');
+  });
+
+  it('yields the heading alone for an empty body', () => {
+    const out = prependTitleHeading('\n\n', page('m/p.md', 'Title'), 1);
+    assert.equal(out, '# Title');
   });
 });
 
@@ -233,7 +243,7 @@ describe('buildPlainMarkdown', () => {
   const groupA = {
     moduleTitle: 'Module A',
     moduleFolder: '01-a',
-    items: [page('01-a/01-one.md', 'One', '# One\n\nBody one.')],
+    items: [page('01-a/01-one.md', 'One', 'Body one.')],
   };
 
   it('flat regime: items are H1, no module heading, no header', () => {
@@ -247,7 +257,7 @@ describe('buildPlainMarkdown', () => {
         {
           moduleTitle: 'Module A',
           moduleFolder: '01-a',
-          items: [page('01-a/01-one.md', 'One', '# One\n\n## Sub\n\nBody.')],
+          items: [page('01-a/01-one.md', 'One', '## Sub\n\nBody.')],
         },
       ],
       { regime: 'course' },
@@ -288,7 +298,7 @@ describe('buildPlainMarkdown', () => {
             title: 'Sub Section',
             items: [
               {
-                ...page('01-a/02-sub/01-c.md', 'Child', '# Child\n\nc.'),
+                ...page('01-a/02-sub/01-c.md', 'Child', 'c.'),
                 indent: 1,
               },
             ],
@@ -364,8 +374,6 @@ describe('buildPlainMarkdown', () => {
 // student hands to a chatbot.
 describe('buildPlainMarkdown: the plain contract', () => {
   const body = [
-    '# Getting started',
-    '',
     '<!-- TODO: replace the placeholder -->',
     '',
     '> [!NOTE]',

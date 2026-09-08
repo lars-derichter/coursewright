@@ -11,6 +11,14 @@
   Like the other warnings it never fails the run, because the page renders and
   pushes either way.
 
+- Every item in a PDF, Word or markdown export opens with a heading built from
+  its frontmatter title, emoji included, whatever the body starts with. Before,
+  a leading heading in the body supplied the chapter heading instead, so a page
+  whose title carried an emoji printed an emoji-free heading while a file or an
+  external-URL item printed one, and the two disagreed inside the same document.
+  A page that still opens with `#` now prints its title twice, and
+  `npx course validate` names those pages.
+
 ## 1.1.1 (2026-09-01)
 
 - **Course: New Item** and `npx course new-item` create a discussion. The list

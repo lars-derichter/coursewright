@@ -7,7 +7,7 @@ const path = require('path');
 const {
   buildCombinedMarkdown,
   buildMetaBlock,
-  injectAnchorOrGenerate,
+  prependTitleHeading,
   anchorFor,
 } = require('../../lib/export/assemble');
 const {
@@ -77,19 +77,9 @@ describe('buildMetaBlock', () => {
   });
 });
 
-describe('injectAnchorOrGenerate', () => {
-  it('injects the anchor into an existing leading heading', () => {
-    const out = injectAnchorOrGenerate(
-      '# Title\n\nBody',
-      page('m/p.md', 'Title'),
-      1,
-      'sec-x',
-    );
-    assert.equal(out, '# Title {#sec-x}\n\nBody');
-  });
-
-  it('generates a heading when the body has none', () => {
-    const out = injectAnchorOrGenerate(
+describe('prependTitleHeading', () => {
+  it('heads the body with the title at the requested level, anchored', () => {
+    const out = prependTitleHeading(
       'Just body',
       page('m/p.md', 'Title'),
       2,
@@ -98,14 +88,34 @@ describe('injectAnchorOrGenerate', () => {
     assert.equal(out, '## Title {#sec-x}\n\nJust body');
   });
 
-  it('does not double-inject when an id is already present', () => {
-    const out = injectAnchorOrGenerate(
-      '# Title {#keep}\n',
+  it('uses the frontmatter title even when the body opens with a heading', () => {
+    const out = prependTitleHeading(
+      '# Other\n\nBody',
       page('m/p.md', 'Title'),
       1,
       'sec-x',
     );
-    assert.equal(out.split('\n')[0], '# Title {#keep}');
+    assert.equal(out, '# Title {#sec-x}\n\n# Other\n\nBody');
+  });
+
+  it('keeps an emoji in the title intact', () => {
+    const out = prependTitleHeading(
+      'Body',
+      page('m/p.md', '📘 Alerts'),
+      1,
+      'sec-x',
+    );
+    assert.equal(out, '# 📘 Alerts {#sec-x}\n\nBody');
+  });
+
+  it('yields the heading alone for an empty body', () => {
+    const out = prependTitleHeading(
+      '\n\n',
+      page('m/p.md', 'Title'),
+      1,
+      'sec-x',
+    );
+    assert.equal(out, '# Title {#sec-x}');
   });
 });
 
@@ -113,7 +123,7 @@ describe('buildCombinedMarkdown', () => {
   const groupA = {
     moduleTitle: 'Module A',
     moduleFolder: '01-a',
-    items: [page('01-a/01-one.md', 'One', '# One\n\nBody one.')],
+    items: [page('01-a/01-one.md', 'One', 'Body one.')],
   };
 
   it('flat regime: items are H1, no module heading', () => {
@@ -133,7 +143,7 @@ describe('buildCombinedMarkdown', () => {
         {
           moduleTitle: 'Module A',
           moduleFolder: '01-a',
-          items: [page('01-a/01-one.md', 'One', '# One\n\n## Sub\n\nBody.')],
+          items: [page('01-a/01-one.md', 'One', '## Sub\n\nBody.')],
         },
       ],
       { regime: 'course', toc: true },
@@ -144,10 +154,11 @@ describe('buildCombinedMarkdown', () => {
     assert.match(md, /### Sub/); // body H2 shifted to H3
   });
 
-  it('bare regime: no title page, no anchors forced, body kept', () => {
+  it('bare regime: no title page, the item title as H1', () => {
     const md = buildCombinedMarkdown([groupA], { regime: 'bare' }, ctx);
     assert.doesNotMatch(md, /title:/);
     assert.doesNotMatch(md, /toc: true/);
+    assert.match(md, /^# One \{#sec-01-a-01-one\}$/m);
     assert.match(md, /Body one\./);
   });
 
@@ -381,7 +392,7 @@ describe('buildCombinedMarkdown', () => {
             title: 'Sub Section',
             items: [
               {
-                ...page('01-a/02-sub/01-c.md', 'Child', '# Child\n\nc.'),
+                ...page('01-a/02-sub/01-c.md', 'Child', 'c.'),
                 indent: 1,
               },
             ],
