@@ -14,7 +14,7 @@ title: Coursewright
 # Colour and site typography, for the preview site, Canvas HTML and PDF
 # exports alike. Built-in themes: github, thomas-more. The value is a name
 # under src/css/themes/, or a path to a CSS file of your own. Copy a built-in
-# into sources/ and point at it there. See docs/customization.md.
+# into sources/ and point at it there. See docs/customisation.md.
 theme: github
 
 # PDF and DOCX layout: typography, margins, cover, bundled fonts. Built-in

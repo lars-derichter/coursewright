@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The theme comment in the shipped `course.config.yml` pointed at
+  `docs/customization.md`; the guide is `docs/customisation.md`. A course made
+  from an earlier release keeps its own copy of the file, so fix the path there
+  by hand if it bothers you.
+
 - **Course: Check** in the command palette runs `npx course check` in the shared
   terminal, the way **Course: Validate** does. Palette only, like **Course:
   Build Glossary**: no entry in the Course Manager tree or its menus.
