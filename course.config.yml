@@ -24,6 +24,17 @@ theme: github
 export:
   style: generic
 
+# Pre-ship checks: what `npx course check` runs and the pre-push hook gates.
+# `links.roots` lists the folders check-links scans for broken relative links
+# (default: course). `extra` lists subcommands check runs after its built-in
+# list, each written as you would type it after `npx course`, so a command your
+# course registered itself is gated too. See docs/customisation.md.
+# checks:
+#   links:
+#     roots: [course, games]
+#   extra:
+#     - build-games
+
 # Course-facing label language. Built-in sets: en, nl.
 # Individual labels can be overridden under `labels:`; anything you leave out
 # falls back to the built-in set for the language above. The commented block

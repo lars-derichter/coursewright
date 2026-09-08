@@ -273,6 +273,31 @@ selected.
 See [export-styling.md](export-styling.md) for what each file controls and for
 the full export pipeline.
 
+## Pre-Ship Checks
+
+`npx course check` runs every check a course should pass before a push, and
+`npm run hooks:install` installs it as a git pre-push hook. Its built-in list is
+`validate`, `build-glossary --check` when the course keeps a glossary, and
+`check-links`. The `checks:` section of `course.config.yml` shapes it for your
+course:
+
+```yaml
+checks:
+  links:
+    roots: [course, games]
+  extra:
+    - build-games
+```
+
+`links.roots` lists the folders `check-links` scans for broken relative links,
+each relative to the project root. The default is `course` alone; add a folder
+here when you keep markdown students read elsewhere. `extra` lists subcommands
+`check` runs after its built-in list, each written as you would type it after
+`npx course`, so a command your course registered itself is gated by the same
+command and the same hook. An entry the CLI does not know fails the run, which
+is the point: a typo here should not pass as green. Both keys are optional, and
+a value of the wrong shape is ignored with a warning naming it.
+
 ## Licence
 
 The licences follow the tooling/content split:

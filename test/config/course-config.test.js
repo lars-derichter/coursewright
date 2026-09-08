@@ -149,6 +149,103 @@ describe('loadCourseConfig', () => {
     assert.match(warnMock.mock.calls[0].arguments[0], /unknown key "langauge"/);
   });
 
+  it('defaults the checks section when it is absent, without warning', () => {
+    const config = loadCourseConfig(tmpDir);
+    assert.deepEqual(config.checks, {
+      links: { roots: ['course'] },
+      extra: [],
+    });
+    assert.equal(warnMock.mock.callCount(), 0);
+  });
+
+  it('reads the link roots and the extra checks', () => {
+    writeConfig(
+      [
+        'checks:',
+        '  links:',
+        '    roots: [course, games]',
+        '  extra:',
+        '    - build-games',
+        '    - "check-links --root docs"',
+        '',
+      ].join('\n'),
+    );
+    const config = loadCourseConfig(tmpDir);
+    assert.deepEqual(config.checks.links.roots, ['course', 'games']);
+    assert.deepEqual(config.checks.extra, [
+      'build-games',
+      'check-links --root docs',
+    ]);
+    assert.equal(warnMock.mock.callCount(), 0);
+  });
+
+  it('warns and keeps the defaults for a checks value that is not a mapping', () => {
+    writeConfig('checks: yes\n');
+    const config = loadCourseConfig(tmpDir);
+    assert.deepEqual(config.checks, {
+      links: { roots: ['course'] },
+      extra: [],
+    });
+    assert.equal(warnMock.mock.callCount(), 1);
+    assert.match(
+      warnMock.mock.calls[0].arguments[0],
+      /Ignoring "checks".*expected a mapping/,
+    );
+  });
+
+  it('warns and keeps the default roots for a scalar or an empty list', () => {
+    writeConfig(['checks:', '  links:', '    roots: course', ''].join('\n'));
+    assert.deepEqual(loadCourseConfig(tmpDir).checks.links.roots, ['course']);
+    assert.match(
+      warnMock.mock.calls[0].arguments[0],
+      /Ignoring "checks\.links\.roots".*expected a list/,
+    );
+    _clearCache();
+    writeConfig(['checks:', '  links:', '    roots: []', ''].join('\n'));
+    assert.deepEqual(loadCourseConfig(tmpDir).checks.links.roots, ['course']);
+    assert.equal(warnMock.mock.callCount(), 2);
+    assert.match(
+      warnMock.mock.calls[1].arguments[0],
+      /Ignoring empty "checks\.links\.roots"/,
+    );
+  });
+
+  it('drops a non-string entry from a checks list and keeps the rest', () => {
+    writeConfig(
+      [
+        'checks:',
+        '  extra:',
+        '    - build-games',
+        '    - { nested: nope }',
+        '    - ""',
+        '',
+      ].join('\n'),
+    );
+    assert.deepEqual(loadCourseConfig(tmpDir).checks.extra, ['build-games']);
+    assert.equal(warnMock.mock.callCount(), 2);
+    assert.match(
+      warnMock.mock.calls[0].arguments[0],
+      /Ignoring an entry of "checks\.extra"/,
+    );
+  });
+
+  it('warns about unknown keys under checks and checks.links', () => {
+    writeConfig(
+      ['checks:', '  extras: []', '  links:', '    root: course', ''].join(
+        '\n',
+      ),
+    );
+    const config = loadCourseConfig(tmpDir);
+    assert.deepEqual(config.checks, {
+      links: { roots: ['course'] },
+      extra: [],
+    });
+    const messages = warnMock.mock.calls.map((call) => call.arguments[0]);
+    assert.equal(messages.length, 2);
+    assert.match(messages[0], /unknown key "checks\.extras"/);
+    assert.match(messages[1], /unknown key "checks\.links\.root"/);
+  });
+
   it('throws on malformed YAML', () => {
     writeConfig('language: [unclosed\n');
     assert.throws(

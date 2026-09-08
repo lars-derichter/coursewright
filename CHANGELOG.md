@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- `course.config.yml` takes a `checks:` section for the pre-ship checks.
+  `links.roots` lists the folders `check-links` scans for broken relative links,
+  `course` alone unless a course says otherwise; `extra` lists the subcommands
+  `check` runs after its built-in list, so a course that registered a command of
+  its own (a games build, say) has it gated by the same command and the same
+  pre-push hook without patching the tooling after every update. A value of the
+  wrong shape warns and falls back, entry by entry where it can, like every
+  other key in the file.
+
 ## 1.2.1 (2026-09-08)
 
 - A pipe table pushed to Canvas carries its own styling: collapsed borders, a
