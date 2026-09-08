@@ -217,9 +217,20 @@ async function createEntry(
   }
 
   const createdName = `${pad(position)}-${toSlug(name)}.md`;
+  // The frontmatter, and nothing under it. The title is the page heading in
+  // every output: Canvas renders its own page name above the body, Docusaurus
+  // synthesises an H1 from the title, and both exporters write it as the
+  // per-page heading. A `# ${name}` line here would therefore show the title
+  // twice, so deleting it was the first edit an author made in every new file,
+  // and `npx course validate` now warns about a body that opens with one.
+  //
   // serializeFrontmatter produces valid YAML for a title holding a colon, a
-  // quote, an emoji, or anything else a name can be given.
-  const content = serializeFrontmatter(frontmatterData, `\n# ${name}\n`);
+  // quote, an emoji, or anything else a name can be given, and the empty body
+  // is the input `renderFrontmatterKey` in lib/convert/frontmatter.js already
+  // relies on. What comes back ends in the blank line `matter.stringify` pads a
+  // bodyless document with; `writeMarkdown` runs Prettier over it, which takes
+  // that padding off again, so the file on disk ends at the closing `---`.
+  const content = serializeFrontmatter(frontmatterData, '');
   await writeMarkdown(path.join(targetDir, createdName), content);
   return createdName;
 }

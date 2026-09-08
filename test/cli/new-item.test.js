@@ -8,6 +8,7 @@ const matter = require('gray-matter');
 
 const { _readPoints: readPoints } = require('../../cli/new-item');
 const { POINTS_CASES, EMPTY_POINTS } = require('../helpers/points-cases');
+const { seedPrettierConfig } = require('../helpers/prettier-config');
 
 const CLI = path.join(__dirname, '..', '..', 'cli', 'index.js');
 
@@ -452,6 +453,40 @@ describe('npx course new-item --points on a type that has none', () => {
   });
 });
 
+describe('npx course new-item, the bytes it leaves on disk', () => {
+  it('writes the frontmatter block and stops there', () => {
+    // Pinned byte for byte, because a file this tool writes has to be the file
+    // `npm run format` would leave: anything else turns the author's very next
+    // format run into an edit they did not make, and on a file sync tracks,
+    // into a local change it pushes straight back. Two steps have to meet for
+    // that to hold, and neither is visible from the other's side.
+    // `serializeFrontmatter` pads a document with no body, and the Prettier run
+    // inside `writeMarkdown` takes the padding off again, so what lands is the
+    // closing fence and one newline.
+    //
+    // The repo's own Prettier configuration is copied in first: `resolveConfig`
+    // finds nothing under `os.tmpdir()`, and a real course is formatted by a
+    // configuration rather than by Prettier's defaults.
+    const dir = seedPrettierConfig(project());
+
+    const run = newItem(dir, [
+      '--module',
+      '01-intro',
+      '--type',
+      'page',
+      '--name',
+      'Notes',
+    ]);
+    assert.equal(run.status, 0, run.stderr);
+
+    const raw = fs.readFileSync(
+      path.join(dir, 'course', '01-intro', '01-notes.md'),
+      'utf8',
+    );
+    assert.equal(raw, '---\ntitle: Notes\ncanvas_type: page\n---\n');
+  });
+});
+
 describe('npx course new-item --type discussion', () => {
   /** Create one discussion called "Week 3 Reading", and read it back. */
   function discussion(dir) {
@@ -488,18 +523,21 @@ describe('npx course new-item --type discussion', () => {
     assert.equal(file.data.canvas_type, 'discussion');
   });
 
-  it('writes the title and nothing else', () => {
+  it('writes the two keys and nothing under them', () => {
     // A page's scaffold and a discussion's are the same shape on purpose:
     // `discussion_type`, `require_initial_post` and the two dates are optional
     // in Canvas, and a value nobody chose written into a new file reads exactly
-    // like one that was.
+    // like one that was. The body is empty for a related reason: the title is
+    // the page heading in Canvas, in the preview site and in both exports, so
+    // the `# Week 3 Reading` that used to sit here showed it twice and was the
+    // first line an author deleted.
     const dir = project();
 
     const { file } = discussion(dir);
 
     assert.deepEqual(Object.keys(file.data), ['title', 'canvas_type']);
     assert.equal(file.data.title, 'Week 3 Reading');
-    assert.equal(file.content.trim(), '# Week 3 Reading');
+    assert.equal(file.content, '');
   });
 
   it('takes no points, the way every non-assignment does', () => {

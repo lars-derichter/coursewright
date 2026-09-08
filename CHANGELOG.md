@@ -19,6 +19,11 @@
   A page that still opens with `#` now prints its title twice, and
   `npx course validate` names those pages.
 
+- **Course: New Item** and `npx course new-item` write the frontmatter and
+  nothing else. The `# Name` line they used to put under it repeated the title,
+  which the preview site, Canvas and both exports already show as the page
+  heading, so deleting it was the first edit an author made in every new file.
+
 ## 1.1.1 (2026-09-01)
 
 - **Course: New Item** and `npx course new-item` create a discussion. The list
