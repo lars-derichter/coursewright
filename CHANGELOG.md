@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- `npx course validate` warns about a page whose body opens with a level-1
+  heading, quoting the line it found. The frontmatter title is the page heading
+  in every output: Canvas renders its own page name above the body, Docusaurus
+  synthesises an H1 from the title, and both exporters write it as the per-page
+  heading. A body that starts with `# Introduction` therefore shows the title
+  twice, and the fix is to delete the line and open the first section with `##`.
+  Like the other warnings it never fails the run, because the page renders and
+  pushes either way.
+
 ## 1.1.1 (2026-09-01)
 
 - **Course: New Item** and `npx course new-item` create a discussion. The list

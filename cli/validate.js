@@ -150,6 +150,23 @@ function validateModules(modules, courseDir, projectRoot = PROJECT_ROOT) {
         continue;
       }
 
+      // Check for a level-1 heading at the top of the body. The frontmatter
+      // title is the heading in every output: Canvas renders the page name,
+      // Docusaurus synthesises an H1 from the title, and the exporters write it
+      // above the body. An H1 in the body is that title a second time.
+      //
+      // The first non-blank line is the whole check, and that is enough. An H1
+      // inside a fenced code block cannot be the first non-blank line, because
+      // the opening fence would be that line instead; an indented code block
+      // cannot be it either, since `^#` allows no leading space. And `\s` after
+      // the `#` rules out `##`, so a section heading never matches.
+      const firstLine = body.split('\n').find((line) => line.trim() !== '');
+      if (firstLine && /^#\s+\S/.test(firstLine)) {
+        warnings.push(
+          `${item.relativePath}: the body opens with a level-1 heading, "${firstLine.trim()}". The frontmatter title is already the page heading on the site, on Canvas and in every export, so this line shows the title twice: remove it and open the first section with ##.`,
+        );
+      }
+
       // Check canvas_type
       if (data.canvas_type && !VALID_CANVAS_TYPES.has(data.canvas_type)) {
         errors.push(

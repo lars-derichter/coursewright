@@ -180,6 +180,81 @@ describe('validateModules — internal links', () => {
   });
 });
 
+describe('validateModules — a level-1 heading in the body', () => {
+  const WARNING =
+    '01-module/01-page.md: the body opens with a level-1 heading, "# Page". ' +
+    'The frontmatter title is already the page heading on the site, on Canvas ' +
+    'and in every export, so this line shows the title twice: remove it and ' +
+    'open the first section with ##.';
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'validate-h1-'));
+    moduleDir = path.join(tmpDir, '01-module');
+    fs.mkdirSync(moduleDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  /** Write a page whose body is `body`. */
+  function writePage(body) {
+    writeItem('01-page.md', `---\ntitle: Page\n---\n\n${body}\n`);
+  }
+
+  it('warns about a body that opens with an H1', () => {
+    writePage('# Page\n\nSome text.');
+
+    const { errors, warnings } = run();
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, [WARNING]);
+  });
+
+  it('still warns when blank lines come first', () => {
+    writePage('\n\n   \n\n# Page\n\nSome text.');
+
+    const { warnings } = run();
+    assert.deepEqual(warnings, [WARNING]);
+  });
+
+  it('says nothing about a body that opens with an H2', () => {
+    writePage('## Section\n\nSome text.');
+
+    const { errors, warnings } = run();
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+
+  it('ignores an H1 inside a fence that opens the body', () => {
+    // The fence opener is the first non-blank line, so the heading inside it
+    // is never the line that gets read.
+    writePage('```markdown\n# Example\n```\n\nSome text.');
+
+    const { errors, warnings } = run();
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+
+  it('says nothing about an H1 further down the page', () => {
+    // Deliberate: the check is about the doubled title at the top of the page,
+    // not about every H1 in the file.
+    writePage('Some text.\n\n# Later heading\n\nMore text.');
+
+    const { errors, warnings } = run();
+    assert.deepEqual(errors, []);
+    assert.deepEqual(warnings, []);
+  });
+
+  it('keeps the H1 warning out of the exit-code path', () => {
+    // Warnings never fail validate; only errors do. A doubled title is ugly,
+    // not broken: the page renders and pushes either way.
+    writePage('# Page\n\nSome text.');
+
+    const { errors } = run();
+    assert.deepEqual(errors, []);
+  });
+});
+
 describe('validateModules — raw HTML file references', () => {
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'validate-rawhtml-'));
