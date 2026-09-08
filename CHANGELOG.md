@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 (2026-09-08)
 
 - `npx course validate` warns about a page whose body opens with a level-1
   heading, quoting the line it found. The frontmatter title is the page heading
