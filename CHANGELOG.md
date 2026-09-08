@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.1 (2026-09-08)
 
 - A pipe table pushed to Canvas carries its own styling: collapsed borders, a
   border and padding on every cell, a bold header row on a subtle background
