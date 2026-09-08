@@ -1,10 +1,23 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const {
   markdownToHtml,
   getAlertConfig,
 } = require('../../lib/convert/markdown-to-html');
 const { LABEL_SETS } = require('../../lib/config/labels');
+const {
+  ALERT_KINDS,
+  DEFAULT_THEME,
+  THEMES_SUBDIR,
+  loadTheme,
+  _clearCache: clearThemeCache,
+} = require('../../lib/config/theme');
+const {
+  _clearCache: clearConfigCache,
+} = require('../../lib/config/course-config');
 
 describe('markdownToHtml', () => {
   it('converts basic markdown to HTML', () => {
@@ -25,8 +38,8 @@ describe('markdownToHtml', () => {
   it('converts GFM tables', () => {
     const md = '| A | B |\n|---|---|\n| 1 | 2 |';
     const html = markdownToHtml(md);
-    assert.match(html, /<table>/);
-    assert.match(html, /<td>1<\/td>/);
+    assert.match(html, /<table style="/);
+    assert.match(html, /<td[^>]*>1<\/td>/);
   });
 
   it('converts fenced code blocks', () => {
@@ -42,6 +55,113 @@ describe('markdownToHtml', () => {
     assert.match(html, /<strong>bold<\/strong>/);
     assert.match(html, /<em>italic<\/em>/);
     assert.match(html, /<code>code<\/code>/);
+  });
+});
+
+describe('markdownToHtml tables', () => {
+  const aligned = '| A | B | C |\n| :--- | ---: | :---: |\n| 1 | 2 | 3 |';
+  const rows =
+    '| A | B |\n| --- | --- |\n| 1 | 2 |\n| 3 | 4 |\n| 5 | 6 |\n| 7 | 8 |';
+
+  it('collapses the table borders', () => {
+    // Canvas keeps no stylesheet, so a table that carries no style of its own
+    // arrives with every cell stuck against the next.
+    assert.match(
+      markdownToHtml('| A |\n| --- |\n| 1 |'),
+      /<table style="[^"]*border-collapse: collapse;/,
+    );
+  });
+
+  it('takes its colours from the active theme', () => {
+    const { tokens } = loadTheme();
+    const html = markdownToHtml('| A |\n| --- |\n| 1 |');
+    const border = tokens.border;
+    const stripe = tokens['surface-subtle'];
+
+    // Every cell: a border and padding. The header cells also the heavier rule
+    // under the row and the fill, which is what makes a header read as one.
+    assert.ok(
+      html.includes(
+        `<th style="border: 1px solid ${border}; ` +
+          `border-bottom: 2px solid ${border}; padding: .75em; ` +
+          `background: ${stripe};">A</th>`,
+      ),
+      `Header cell came out unexpected:\n${html}`,
+    );
+    assert.ok(
+      html.includes(
+        `<td style="border: 1px solid ${border}; padding: .75em;">`,
+      ),
+      `Body cell came out unexpected:\n${html}`,
+    );
+  });
+
+  it('stripes every second body row', () => {
+    // Infima's `table tr:nth-child(2n)` on the site, which inside `<tbody>` is
+    // the second row and every other one after it.
+    const bodyRows = markdownToHtml(rows).match(/<tr[^>]*>\n<td/g);
+    const { tokens } = loadTheme();
+    assert.deepStrictEqual(
+      bodyRows.map((row) => row.startsWith('<tr>')),
+      [true, false, true, false],
+    );
+    assert.match(
+      markdownToHtml(rows),
+      new RegExp(`<tr style="background: ${tokens['surface-subtle']};">`),
+    );
+  });
+
+  it('keeps column alignment in the align attribute, never in the style', () => {
+    // A pull reads a column's alignment as
+    // `getAttribute('align') || style.textAlign`, so a `text-align` in the
+    // style would be written back as `:---` in every column of the separator
+    // row, in tables the author never aligned.
+    const html = markdownToHtml(aligned);
+    assert.match(html, /<th align="left"/);
+    assert.match(html, /<th align="right"/);
+    assert.match(html, /<th align="center"/);
+    assert.match(html, /<td align="center"/);
+    assert.doesNotMatch(html, /text-align/);
+  });
+
+  it('emits no tbody for a header-only table', () => {
+    // marked leaves the element out entirely when there are no body rows, and
+    // the override follows it: an empty <tbody> is markup Canvas never saw
+    // before and the pull would have to ignore.
+    const html = markdownToHtml('| A |\n|---|');
+    assert.doesNotMatch(html, /<tbody/);
+    assert.match(html, /<\/thead>\n<\/table>/);
+  });
+
+  it('escapes a theme colour that would close the attribute', () => {
+    // The colours are read out of a theme's CSS as written, with no validation
+    // of the value, so they are outside data like a URL is.
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'table-theme-'));
+    try {
+      fs.mkdirSync(path.join(tmpDir, THEMES_SUBDIR), { recursive: true });
+      fs.writeFileSync(
+        path.join(tmpDir, THEMES_SUBDIR, `${DEFAULT_THEME}.css`),
+        `:root {\n  --cw-fg: #111111;\n` +
+          ALERT_KINDS.map(
+            (kind) =>
+              `  --cw-alert-${kind}-fg: #aa0000;\n` +
+              `  --cw-alert-${kind}-bg: #bb0000;\n`,
+          ).join('') +
+          `  --cw-border: "><b>;\n  --cw-surface-subtle: #eeeeee;\n}\n`,
+      );
+      clearThemeCache();
+      clearConfigCache();
+      const html = markdownToHtml('| A |\n| --- |\n| 1 |', { rootDir: tmpDir });
+      assert.match(html, /&quot;&gt;&lt;b&gt;/);
+      assert.ok(
+        !html.includes('"><b>'),
+        `The colour closed the attribute:\n${html}`,
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      clearThemeCache();
+      clearConfigCache();
+    }
   });
 });
 
@@ -476,7 +596,6 @@ describe('getAlertConfig', () => {
   });
 
   it('takes its colours from the active theme', () => {
-    const { loadTheme } = require('../../lib/config/theme');
     const theme = loadTheme();
     const config = getAlertConfig();
     assert.strictEqual(config.note.color, theme.alerts.note.fg);

@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- A pipe table pushed to Canvas carries its own styling: collapsed borders, a
+  border and padding on every cell, a bold header row on a subtle background
+  with a heavier rule under it, and a stripe on every second body row, which is
+  the look the preview site has always had. Before, the table went out as bare
+  `<table>` markup, and since Canvas strips a `<style>` block and links no
+  stylesheet, every cell ran into the next. The two colours are the theme's
+  `--cw-border` and `--cw-surface-subtle`, the same tokens the website and the
+  PDF export read, so a custom theme now has to define both and is refused with
+  an error naming the missing one if it does not. A pull is unchanged: it drops
+  the styling and writes a plain pipe table back, column alignment included. A
+  page already on Canvas shows the new tables after its next push, which happens
+  the next time its file changes.
+
 ## 1.2.0 (2026-09-08)
 
 - `npx course validate` warns about a page whose body opens with a level-1

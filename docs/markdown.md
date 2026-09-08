@@ -160,6 +160,34 @@ its relatives, which Finder leaves in any folder it has shown and `.gitignore`
 hides from git but not from the scanner: without the skip, one would sync to
 Canvas as a file item. No course item starts with a dot, so nothing is lost.
 
+## Tables
+
+Write a table as a GFM pipe table:
+
+```md
+| Week | Topic         | Deadline |
+| :--- | :------------ | -------: |
+| 1    | Introduction  |        - |
+| 2    | Analysis      |   15 Oct |
+```
+
+It renders on Canvas the way it does on the preview site: collapsed borders, a
+1px border on every cell, room around the text, a bold header row on a subtle
+background with a heavier rule under it, and every second body row striped. The
+colours are the theme's `--cw-border` and `--cw-surface-subtle`, so a table
+matches the site and the PDF export without a second palette to keep in step.
+
+The styling is written into the HTML as inline `style` attributes, because
+Canvas keeps no stylesheet of its own: a `<style>` block is stripped on save, so
+an attribute is the only thing that survives. A pull drops all of it and writes
+a plain pipe table back into your file, which is why the markdown stays readable
+after a sync. Column alignment does survive: `:---`, `---:` and `:---:` go out
+as the `align` attribute and come back as the same three markers.
+
+A page that is already on Canvas keeps the table it has until the page is pushed
+again, and a push writes a page only when its file has changed. Edit the page
+and sync to see the new styling.
+
 ## Custom Alerts
 
 Use GitHub-style blockquote alerts for callout boxes. These render with matching

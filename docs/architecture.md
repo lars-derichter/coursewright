@@ -422,6 +422,14 @@ URLs, fragment-only links, and non-`.md` links pass through unchanged.
 - Custom renderer produces inline-styled alert HTML with Canvas-hosted SVG
   icons. The icon is decorative and carries an empty `alt`: the alert's title
   says the same thing in words, right beside it
+- Custom table renderers style a pipe table inline, from the theme's
+  `--cw-border` and `--cw-surface-subtle`: collapsed borders, a border and
+  padding on every cell, a filled header row with a heavier rule under it, and a
+  stripe on every second body row, which is what the preview site draws from the
+  same two tokens. Column alignment stays the `align` attribute `marked` already
+  emits and never becomes a `text-align` in the style, because a pull reads
+  either one as the column's alignment and would write a `:---` under every
+  column of a table nobody aligned
 - Custom link/image renderers resolve internal references
 - Every outside value the converter interpolates is HTML-escaped, in an
   attribute and in element content alike. A `"` or a `<` in a filename would
@@ -451,6 +459,11 @@ URLs, fragment-only links, and non-`.md` links pass through unchanged.
 - Uses `turndown` with atx headings and fenced code blocks
 - Custom rules convert alert divs back to GFM alert syntax
 - Custom rules resolve Canvas internal links and file URLs
+- A table's inline styling does not survive the trip, by design: the GFM
+  plugin's `preserveTableStyles` is off, so a styled table comes back as a plain
+  pipe table and the author's file keeps no `style` attribute. Turned on, the
+  plugin would keep any table whose cells carry a border, padding or a
+  background as raw HTML, which is every table this project pushes
 - The alert's icon does not survive the trip, by design: the rule skips the
   title paragraph the icon sits in, so the markdown names no icon and the next
   push renders a fresh one from `state.icons`. `downloadReferencedFiles` in

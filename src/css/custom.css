@@ -49,6 +49,7 @@
   /* Layout */
   --ifm-global-radius: 4px;
   --ifm-color-emphasis-300: var(--cw-border);
+  --ifm-table-stripe-background: var(--cw-surface-subtle);
   --doc-sidebar-width: 17rem;
 
   /* Backgrounds */

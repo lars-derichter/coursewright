@@ -24,6 +24,8 @@ const {
 const MINIMAL_THEME = `
 :root {
   --cw-fg: #111111;
+  --cw-border: #cccccc;
+  --cw-surface-subtle: #eeeeee;
   --cw-font-sans: Helvetica,
     Arial, sans-serif;
 ${ALERT_KINDS.map((kind) => `  --cw-alert-${kind}-fg: #aa00${kind.length}0;\n  --cw-alert-${kind}-bg: #bb00${kind.length}0;`).join('\n')}
@@ -145,6 +147,17 @@ describe('loadTheme', () => {
       ':root { --cw-fg: #111111; }',
     );
     assert.throws(() => loadTheme(tmpDir), /alert-note-fg/);
+  });
+
+  it('throws when a theme is missing a table colour', () => {
+    // Same treatment as the alert pairs, for the same reason: the Canvas table
+    // renderer has no fallback colour, and failing here names the theme rather
+    // than the first page that happens to hold a table.
+    fs.writeFileSync(
+      path.join(tmpDir, THEMES_SUBDIR, `${DEFAULT_THEME}.css`),
+      MINIMAL_THEME.replace('--cw-border: #cccccc;', ''),
+    );
+    assert.throws(() => loadTheme(tmpDir), /--cw-border/);
   });
 });
 

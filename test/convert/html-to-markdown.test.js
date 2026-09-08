@@ -120,6 +120,29 @@ describe('htmlToMarkdown tables', () => {
     assert.match(md, /\| Bob\s+\| 7\s+\|/);
   });
 
+  it('drops the table styling on pull', () => {
+    // A push styles every table inline, because Canvas serves no stylesheet.
+    // None of that reaches the author's file: @joplin/turndown-plugin-gfm keeps
+    // a table as raw HTML only when `preserveTableStyles` is set, and this
+    // repo never sets it, so a styled table pulls back as a plain pipe table.
+    const md = htmlToMarkdown(
+      markdownToHtml('| A | B |\n| --- | --- |\n| 1 | 2 |'),
+    );
+    assert.doesNotMatch(md, /style=/);
+    assert.doesNotMatch(md, /<table/);
+
+    // The trapdoor, pinned: the plugin's `tableShouldBeHtml` keeps a table as
+    // HTML when that option is on and a cell carries a style it lists, and its
+    // list holds `background`, `border`, `border-bottom` and `padding`,
+    // exactly what the renderer emits. Turned on, every table this project
+    // pushes would come back into the markdown as raw HTML.
+    assert.equal(
+      new TurndownService().options.preserveTableStyles,
+      undefined,
+      'preserveTableStyles is on, so a pull now writes tables as raw HTML',
+    );
+  });
+
   it('resolves Canvas links inside table cells', () => {
     const html =
       '<table><thead><tr><th>Link</th></tr></thead><tbody><tr>' +
@@ -1065,6 +1088,20 @@ describe('round trip through push and pull: block structure', () => {
     assert.match(rt.md2, /\| ---/, 'Expected header separator row');
     assert.match(rt.md2, /\| Alice \| 10\s+\|/);
     assert.match(rt.md2, /\| Bob\s+\| 7\s+\|/);
+  });
+
+  it('survives a pipe table with column alignment', () => {
+    // Alignment rides on the `align` attribute a push emits, never on a
+    // `text-align` in the cell style: the pull reads either one as the column's
+    // alignment, so a style-borne one would put a `:---` under every column of
+    // a table nobody aligned.
+    const rt = roundTrips(
+      '| L | R | C |\n| :--- | ---: | :---: |\n| 1 | 2 | 3 |\n',
+    );
+    assertSurvivesRoundTrip(rt);
+    assert.ok(rt.md2.includes('| :--- |'), `No left column in:\n${rt.md2}`);
+    assert.ok(rt.md2.includes('| ---: |'), `No right column in:\n${rt.md2}`);
+    assert.ok(rt.md2.includes('| :---: |'), `No centre column in:\n${rt.md2}`);
   });
 });
 

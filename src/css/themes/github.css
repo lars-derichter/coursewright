@@ -37,6 +37,9 @@
   --cw-secondary: #1f2328;
 
   /* --- Neutrals ---------------------------------------------------------- */
+  /* `border` and `surface-subtle` also draw the tables in Canvas pages and on
+     the site: the cell borders, the header fill and the row stripe. Every theme
+     has to define both. */
   --cw-fg: #1f2328;
   --cw-fg-muted: #59636e;
   --cw-border: #d1d9e0;

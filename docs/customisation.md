@@ -186,9 +186,9 @@ the complete house style.
 ### Colour: The Theme
 
 A theme is a CSS file of custom properties, and it is the single source of truth
-for colour. The website, the alert colours in Canvas pages, the alert icons
-uploaded to Canvas, and PDF exports all read the same file, so a colour you
-change in one place changes everywhere.
+for colour. The website, the alert and table colours in Canvas pages, the alert
+icons uploaded to Canvas, and PDF exports all read the same file, so a colour
+you change in one place changes everywhere.
 
 Built-in themes live in [`src/css/themes/`](../src/css/themes/):
 
@@ -204,6 +204,12 @@ Two groups are worth knowing before you open it: the alert colours come as a
 `warning`, `caution` and `check`, where `fg` is the left rule and the title and
 `bg` fills the box; and the font tokens set the website's typography only:
 export typography belongs to the export style below.
+
+Some tokens are required. Alongside the twelve alert values, a theme has to
+define `--cw-border` and `--cw-surface-subtle`: they draw the tables in Canvas
+pages and the borders and row stripes on the website, and nothing falls back to
+a colour of its own if they are absent. A theme missing one is refused with an
+error naming it.
 
 To make a theme of your own, copy one into `sources/` and point `theme:` at the
 path:
