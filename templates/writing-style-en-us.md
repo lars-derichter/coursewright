@@ -88,11 +88,15 @@ section, we will…" meta-introductions.
   ```
 - **Short prose paragraphs** for explanation. No walls of text.
 - **Code blocks** for anything that is typed, shown, or copied.
-- **Headings** to break up longer pages. Use `##` for main sections; `###`
-  sparingly.
+- **Headings** to break up longer pages. Start at `##` for main sections; `###`
+  sparingly. Never `#`: that level belongs to the page title.
 
 ### Headings and Titles
 
+- **No level-1 heading in the body.** The `title` in the frontmatter is the page
+  heading in every output: the website, Canvas, and the PDF, Word and markdown
+  exports. A `#` in the body prints that title a second time, and
+  `npx course validate` reports the page. Sections start at `##`.
 - **Title case, Chicago style.** Capitalize the first and last word plus every
   major word. Lowercase articles (a, an, the), coordinating conjunctions (and,
   but, or, nor, for, so, yet), and prepositions of three letters or fewer (in,
@@ -266,9 +270,9 @@ with its meaning.
 - ℹ️ extra info
 - 🔁 revision
 
-Emoji stay on the title: none in headings, bullets, or prose. Students never
-read this guide, so put the legend on your course's start page; signage only
-works when the reader knows the signs.
+Emoji stay on the title: none in the section headings inside the page, in
+bullets, or in prose. Students never read this guide, so put the legend on your
+course's start page; signage only works when the reader knows the signs.
 
 ### Callouts (GitHub-Style Alerts)
 

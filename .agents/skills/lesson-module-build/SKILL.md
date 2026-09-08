@@ -92,14 +92,16 @@ with one sentence if the source is not a `.md` under `sources/lessons/`.
 6. **Markdown pages.** Student-facing register per `context/writing-style.md`
    (voice, punctuation, page-title emoji, callouts). Frontmatter per
    `docs/frontmatter.md`: homework becomes `canvas_type: assignment`; mirror the
-   worked example's homework page or ask for the values once. Conventions and
-   formatting mirror the worked examples and `course-context.md`; content comes
-   from the plan alone. Use the canonical glossary's base terms: a term's listed
-   synonyms may be named once at first use; never standardise on a synonym or
-   invent one. Cross-links are relative: `./0X-<slug>.md`,
-   `../NN-<module>/0X-<slug>.md`, `./_files/<name>.zip`. Embed images where they
-   belong; each page with images gets one HTML-comment TODO block at the bottom
-   listing what each must show.
+   worked example's homework page or ask for the values once. A page opens with
+   its frontmatter and nothing else above its first `##`: the `title` is the
+   page heading in every output, so never write a `#` line in the body.
+   Conventions and formatting mirror the worked examples and
+   `course-context.md`; content comes from the plan alone. Use the canonical
+   glossary's base terms: a term's listed synonyms may be named once at first
+   use; never standardise on a synonym or invent one. Cross-links are relative:
+   `./0X-<slug>.md`, `../NN-<module>/0X-<slug>.md`, `./_files/<name>.zip`. Embed
+   images where they belong; each page with images gets one HTML-comment TODO
+   block at the bottom listing what each must show.
 
    Page roles (defaults: `course-context.md` and worked examples win):
    - **Overview**: 2–4-sentence intro, what students need, what the lesson

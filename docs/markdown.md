@@ -4,6 +4,19 @@ Standard
 [GitHub Flavored Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
 is supported.
 
+## Headings
+
+A page's `title` in the frontmatter is its heading. The preview site renders it
+above the body, Canvas shows it as the item name, and a PDF, Word or markdown
+export opens the item with it, emoji and all. So the body carries no `#` of its
+own: its sections start at `##`, and `npx course validate` warns about a body
+that opens with a level-1 heading, because that line prints the title twice.
+
+An export shifts those levels with its scope. A module export puts each item
+title at H1 and leaves the body as written; a whole-course export puts module
+titles at H1 and item titles at H2, and moves the body down with them, so a
+page's `##` becomes an `###`. See [Exporting](exporting.md).
+
 ## Internal Links
 
 Use standard relative markdown links to reference other course pages:

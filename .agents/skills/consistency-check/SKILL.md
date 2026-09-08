@@ -1,6 +1,6 @@
 ---
 name: consistency-check
-description: Whole-course consistency sweep of course/: dead cross-links, terms used before their introducing lesson, glossary drift, duplicate or gapped numeric prefixes, frontmatter problems, stale prerequisite references, a label language that does not match the prose language. Complements /proofread, which checks a single file, and /coverage-map, which checks learning-goal alignment rather than structure. Reports findings grouped by severity and offers to apply the mechanical ones; writes nothing by default. Use for "consistency check", "check the whole course", "find dead links", "consistentiecheck", "dode links zoeken", "hele cursus nakijken".
+description: Whole-course consistency sweep of course/: dead cross-links, terms used before their introducing lesson, glossary drift, duplicate or gapped numeric prefixes, frontmatter problems, page bodies that repeat their title as a heading, stale prerequisite references, a label language that does not match the prose language. Complements /proofread, which checks a single file, and /coverage-map, which checks learning-goal alignment rather than structure. Reports findings grouped by severity and offers to apply the mechanical ones; writes nothing by default. Use for "consistency check", "check the whole course", "find dead links", "consistentiecheck", "dode links zoeken", "hele cursus nakijken".
 ---
 
 # Consistency Check
@@ -74,6 +74,12 @@ still verified.
      stays step 3's. What no command checks stays a judgement call against
      `docs/frontmatter.md`: assignment pages missing the fields the worked
      examples carry.
+   - A body that opens with a level-1 heading. The same `npx course validate`
+     run warns about each one by path and quotes the line. Every such warning is
+     a finding, and the fix is the one the warning gives: delete the line,
+     because the frontmatter `title` is already the page heading in every
+     output. When the line's wording differs from the `title`, quote both in the
+     finding, so the author can decide whether the `title` should take it.
    - `_category_.json` whose `position` does not match the folder's numeric
      prefix, or module folders missing `_category_.json` where the other modules
      have one.
@@ -102,7 +108,7 @@ still verified.
 7. **Group and report findings.** Three severity buckets:
 
    - **Must fix**: dead links, `build-glossary --check` failures, duplicate
-     prefixes, invalid frontmatter.
+     prefixes, invalid frontmatter, a body that opens with a level-1 heading.
    - **Strongly suggest**: terms used before their introducing lesson, synonym
      drift, stale prerequisite references, `_category_.json`/prefix mismatches,
      a label language that does not match the prose language.
@@ -115,10 +121,11 @@ still verified.
 
 8. **Offer to apply mechanical fixes.** Only the mechanical categories qualify:
    dead links with an obvious correct target, prefix and `_category_.json`
-   corrections. Ask whether the author wants all, a selection by number, or
-   none. Default is none. When applying, make minimal-diff edits, then re-run
-   the relevant check to confirm. Judgement findings (glossary, terminology,
-   prerequisites) are never auto-fixed; the author handles those.
+   corrections, deleting a body's opening level-1 heading (the line only; the
+   `title` stays as it is). Ask whether the author wants all, a selection by
+   number, or none. Default is none. When applying, make minimal-diff edits,
+   then re-run the relevant check to confirm. Judgement findings (glossary,
+   terminology, prerequisites) are never auto-fixed; the author handles those.
 
 ## Rules
 

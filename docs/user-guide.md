@@ -172,8 +172,9 @@ listed in `protected_files`, so upstream updates never overwrite your choice.
 ## Markdown Files
 
 Markdown is a simple way to format text using plain characters: for example,
-`**bold**` for **bold** and `# Heading` for a heading. Your course materials are
-written as markdown files, which are just regular text files that end in `.md`.
+`**bold**` for **bold** and `## Heading` for a heading. Your course materials
+are written as markdown files, which are just regular text files that end in
+`.md`.
 
 See the [markdown guide](markdown.md) for supported syntax and custom alerts,
 and the [frontmatter guide](frontmatter.md) for the metadata fields.

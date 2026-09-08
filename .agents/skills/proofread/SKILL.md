@@ -51,6 +51,12 @@ ask. Only proceed for `.md` files. For other extensions, stop and explain.
    - Headings that break the guide's case rule, in whichever direction it runs:
      sentence case where the guide mandates title case, or title case where it
      mandates sentence case. Headings ending in punctuation other than `?`.
+   - In a `course/` page, a body that opens with a level-1 heading: the first
+     non-blank line after the frontmatter starts with `# `. The frontmatter
+     `title` is already the page heading in every output (writing-style.md's
+     Headings and Titles section), so the proposed replacement is deleting the
+     line. If its wording differs from the `title`, quote both: the author may
+     want the `title` to take that wording instead.
    - Register mismatch: in a colleague-facing doc, a page-title emoji on the H1
      or GitHub-style callouts (both defined in writing-style.md's student-facing
      section); in a student doc, a meta-introduction opening (writing-style.md's
@@ -81,7 +87,8 @@ ask. Only proceed for `.md` files. For other extensions, stop and explain.
    `line | quoted text | diagnosis | proposed replacement`, diagnoses of one
    short sentence:
    - **Must fix**: hard `writing-style.md` violations (em-dashes, the wrong
-     heading case, a forbidden address form, register mismatch).
+     heading case, a forbidden address form, a level-1 heading opening a
+     `course/` page, register mismatch).
    - **Strongly suggest**: spelling, grammar, translated-sounding phrasing, AI
      tells, tricolons, scattered bold.
    - **Consider**: sentence length, rhythm, trailing summaries.

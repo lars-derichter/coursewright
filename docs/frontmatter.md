@@ -12,11 +12,11 @@ external tool, write the file yourself with the frontmatter below.
 
 ## Common Fields
 
-| Field         | Type    | Description                                                                                                                                         |
-| ------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`       | string  | Display title on Canvas. Derived from the filename if omitted, and written into your file the first time a run creates or adopts the Canvas object. |
-| `canvas_type` | string  | One of `page`, `assignment`, `discussion`, `quiz`, `external_url`, `external_tool`, `file`. Defaults to `page`.                                     |
-| `export`      | boolean | Set `true` to include this item in `npx course export --flagged`. See [Exporting](exporting.md).                                                    |
+| Field         | Type    | Description                                                                                                                                                                                                                                                |
+| ------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`       | string  | The page heading on the site, on Canvas and in every export, and the item's display title on Canvas. The body never repeats it. Derived from the filename if omitted, and written into your file the first time a run creates or adopts the Canvas object. |
+| `canvas_type` | string  | One of `page`, `assignment`, `discussion`, `quiz`, `external_url`, `external_tool`, `file`. Defaults to `page`.                                                                                                                                            |
+| `export`      | boolean | Set `true` to include this item in `npx course export --flagged`. See [Exporting](exporting.md).                                                                                                                                                           |
 
 That `title:` line is spliced in as text; nothing else in the file is touched,
 and a file that already declares a title is left alone. `push` writes it too,

@@ -81,11 +81,16 @@ Begin met één of twee zinnen context en kom dan ter zake. Geen meta-inleidinge
   ```
 - **Korte alinea's** voor uitleg. Geen lappen tekst.
 - **Codeblokken** voor alles wat je typt, toont of laat kopiëren.
-- **Tussenkoppen** om langere pagina's op te delen. `##` voor de hoofddelen,
-  `###` spaarzaam.
+- **Tussenkoppen** om langere pagina's op te delen. Begin bij `##` voor de
+  hoofddelen, `###` spaarzaam. Nooit `#`: dat niveau is van de paginatitel.
 
 ### Koppen en titels
 
+- **Geen kop van niveau 1 in de tekst.** De `title` in de frontmatter is de kop
+  van de pagina, overal waar je cursus verschijnt: op de website, in Canvas en
+  in de export naar PDF, Word en markdown. Een `#` in de tekst toont die titel
+  dus een tweede keer, en `npx course validate` meldt de pagina. Tussenkoppen
+  beginnen bij `##`.
 - **Alleen zinskapitaal.** Enkel het eerste woord en eigennamen of afkortingen.
   Nooit elk woord met een hoofdletter.
   - Goed: `## Een logische mappenstructuur voor je project`
@@ -267,9 +272,10 @@ een andere; keert die terug, zet hem dan hier in de lijst met zijn betekenis.
 - ℹ️ extra info
 - 🔁 herhaling
 
-Emoji blijven op de titel: geen in koppen, opsommingen of lopende tekst.
-Studenten lezen deze gids nooit; zet de legenda dus op de startpagina van je
-cursus, want bewegwijzering werkt pas als de lezer de borden kent.
+Emoji blijven op de titel: geen in de tussenkoppen op de pagina, in opsommingen
+of in lopende tekst. Studenten lezen deze gids nooit; zet de legenda dus op de
+startpagina van je cursus, want bewegwijzering werkt pas als de lezer de borden
+kent.
 
 ### Callouts (GitHub-alerts)
 

@@ -62,9 +62,12 @@ Output lands in `exports/` (gitignored). A whole-course export takes its title,
 and its filename, from `title` in `course.config.yml`
 (`exports/programming-fundamentals.pdf`); a module export is titled after the
 module. Multiple items combine into one document with a title page, a generated
-table of contents, and a page break between chapters. Non-markdown items keep
-their place: an external URL becomes a link card, a file item an attachment
-reference, and an image file item is embedded above its attachment line.
+table of contents, and a page break between chapters. Each item opens with a
+heading built from its `title` in the frontmatter, page-type emoji included,
+whatever its body starts with; see [Markdown](markdown.md#headings).
+Non-markdown items keep their place: an external URL becomes a link card, a file
+item an attachment reference, and an image file item is embedded above its
+attachment line.
 
 ### From the Terminal
 
@@ -101,8 +104,10 @@ yourself as one file instead of clicking through the site. The document opens
 with a header: the title as a first-level heading, the subtitle and the course
 name on one italic line, then the date. The items follow at the same heading
 levels the PDF uses, module titles as H1 and items as H2 for a whole course,
-items as H1 for a module. A single item is copied as it stands, with no header,
-the way it gets no title page in PDF.
+items as H1 for a module. Each item heading is built from its `title` in the
+frontmatter, page-type emoji included, exactly as the PDF builds it. A single
+item gets no header, the way it gets no title page in PDF, and its own title is
+the one H1 in the file.
 
 Everything the chatbot cannot follow is taken out. Images become their alt text
 in italics, and disappear when they have none. Links to other pages, to

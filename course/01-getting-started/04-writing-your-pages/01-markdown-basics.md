@@ -15,8 +15,10 @@ deleted text and `inline code` for code references.
 
 ## Headings
 
-Headings use `#` symbols. Use `##` for main sections and `###` for subsections.
-Avoid using `#` (h1) in your content since the page title already renders as h1.
+Headings use `#` symbols. Start your sections at `##` and use `###` for
+subsections. Do not write a `#` heading yourself: the `title` in the frontmatter
+is already the heading at the top of the page, on the website, on Canvas and in
+a PDF or Word handout alike. A `#` in your text would show that title twice.
 
 ## Lists
 

@@ -124,10 +124,12 @@ alerts, link resolution and embedded files.
 
 - `course/`: the course itself, one folder per module, numbered 00-99, and the
   only tree the website, the exports and the Canvas sync read. Subfolders become
-  Canvas text headers; a `_files/` subfolder holds a module's embedded assets.
-  The built-in tutorial module `01-getting-started/` is published live at
-  https://coursewright.md/ from this repository and doubles as the demo and the
-  Canvas-sync acceptance test
+  Canvas text headers; a `_files/` subfolder holds a module's embedded assets. A
+  page's frontmatter `title` is its heading in every output, so no body opens
+  with a level-1 heading and every section starts at `##`; `npx course validate`
+  warns about one. The built-in tutorial module `01-getting-started/` is
+  published live at https://coursewright.md/ from this repository and doubles as
+  the demo and the Canvas-sync acceptance test
   ([`docs/contributing.md`](docs/contributing.md#documentation-style)): keep one
   live example in it of every content type a fresh course can create, and name
   the Course Manager action first and the terminal command second, as the user

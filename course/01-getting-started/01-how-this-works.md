@@ -73,8 +73,9 @@ page it is. Here is the legend:
 
 The signs are a convention from this project’s writing style guide, which has a
 longer list to pick from. Use them in your own course or leave them out. Either
-way they live on the title and nowhere else, never in a heading and never in the
-text.
+way they live on the title, and the title is the heading students read at the
+top of the page. They never turn up in the headings inside the page, and never
+in the text.
 
 ## A Word on the Numbers
 

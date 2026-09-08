@@ -18,6 +18,10 @@ For an item, right-click the module or subsection you want it in and choose
 assignment also asks for its points, an external URL for its address, and a file
 opens a file picker. The new item lands at the end of that module or subsection.
 
+A new page or assignment holds its frontmatter and nothing under it. The `title`
+in there is the heading at the top of the page, so your own writing starts below
+it at `##`.
+
 Neither one asks you where to put it. If it belongs somewhere else, move it
 afterwards, which is the next section.
 
