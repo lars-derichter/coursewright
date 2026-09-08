@@ -214,6 +214,7 @@ Choosing the TOC option opens the generated list for editing and reveals
 | Course: Pull from Canvas (Dry Run) | Preview a pull without writing anything    |
 | Course: Status                     | Compare local vs Canvas state              |
 | Course: Validate                   | Check course content for errors            |
+| Course: Check                      | Run every pre-ship check in the terminal   |
 
 ### Module Management
 

@@ -1,6 +1,6 @@
 # CLI Reference
 
-Every `npx course` subcommand is also a command in the
+Every `npx course` subcommand but one is also a command in the
 [VS Code extension](vscode.md): the palette, the sidebar tree, or both. What the
 extension does not reach is the flags. This page lists every flag each
 subcommand declares, the npm scripts, and the handful of capabilities (listed at
@@ -506,11 +506,11 @@ From the root `package.json`.
 | `npm run lint`           | `eslint .`                                    | none                             |
 | `npm run vscode:install` | Packages and installs the extension itself    | none (it installs the extension) |
 | `npm test`               | `node --test "test/**/*.test.js"`             | none                             |
-| `npm run check`          | `npx course check`, every pre-ship check      | none                             |
+| `npm run check`          | `npx course check`, every pre-ship check      | **Course: Check**                |
 | `npm run hooks:install`  | Installs `scripts/pre-push` into `.git/hooks` | none                             |
 
-`npm start` is the only one the extension covers. `npm install`, the build, the
-formatter and every git command are yours to type.
+`npm start` and `npm run check` are the two the extension covers. `npm install`,
+the build, the formatter and every git command are yours to type.
 
 `package.json` also carries thin aliases for the commands above (`canvas:sync`,
 `canvas:push`, `module:new`, `item:rename` and the rest). They run the same CLI
@@ -519,8 +519,9 @@ use throughout.
 
 ## What Only the Terminal Can Do
 
-The extension reaches every one of the 24 `npx course` subcommands, but not
-every flag. These have no route through the sidebar or the palette:
+The extension reaches every `npx course` subcommand but `check-links`, which
+**Course: Check** runs as one of its checks, and not every flag. These have no
+route through the sidebar or the palette:
 
 | Capability                                                                                                        | Terminal only |
 | ----------------------------------------------------------------------------------------------------------------- | ------------- |
@@ -530,6 +531,7 @@ every flag. These have no route through the sidebar or the palette:
 | `search -C`, `--evaluations`, `--sources`, `--case-sensitive`                                                     | yes           |
 | `export -o`, `--title`, `--subtitle`, `--style`, `--var`, `-f md`                                                 | yes           |
 | `build-glossary --check`, `-m`, `-g`                                                                              | yes           |
+| `check-links` on its own, and its `--root`                                                                        | yes           |
 | `reset-canvas --dry-run`                                                                                          | yes           |
 | `new-item --position` and `new-module --position` (the panel appends; reorder afterwards with move or drag)       | yes           |
 | Multi-module `sync -m a -m b` (the panel only ever passes one module)                                             | yes           |

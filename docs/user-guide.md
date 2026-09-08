@@ -353,7 +353,9 @@ it does not; `check-links`; then whatever `checks.extra` in `course.config.yml`
 adds. `hooks:install` copies `scripts/pre-push` into `.git/hooks`, so a push
 that would ship a broken link or a stale glossary page stops on your machine
 rather than in CI; `git push --no-verify` gets past it when you have to.
-`.github/workflows/course-checks.yml` runs the same command on every push. See
+`.github/workflows/course-checks.yml` runs the same command on every push. The
+command palette has a matching **Course: Check** entry, palette only like
+**Course: Build Glossary**. See
 [pre-ship checks](customisation.md#pre-ship-checks) for the two config keys.
 
 ### Searching Course Content

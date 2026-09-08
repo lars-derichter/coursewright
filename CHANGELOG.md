@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Course: Check** in the command palette runs `npx course check` in the shared
+  terminal, the way **Course: Validate** does. Palette only, like **Course:
+  Build Glossary**: no entry in the Course Manager tree or its menus.
+  `check-links` has no entry of its own, since Check runs it.
+
 - `npx course check` runs every pre-ship check in one go and exits non-zero
   naming the ones that failed: `validate`; `build-glossary --check` when the
   course keeps a glossary at the default path, skipped and said so when it does

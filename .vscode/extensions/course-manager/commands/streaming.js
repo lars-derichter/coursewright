@@ -25,6 +25,7 @@ const commands = {
   'course.pullDryRun': 'npx course pull --dry-run',
   'course.status': 'npx course status',
   'course.validate': 'npx course validate',
+  'course.check': 'npx course check',
   'course.buildGlossary': 'npx course build-glossary',
   'course.resetSyncState': 'npx course reset-sync-state',
   'course.resetCanvas': 'npx course reset-canvas',

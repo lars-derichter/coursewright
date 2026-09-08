@@ -158,6 +158,10 @@
         "title": "Course: Validate"
       },
       {
+        "command": "course.check",
+        "title": "Course: Check"
+      },
+      {
         "command": "course.search",
         "title": "Course: Search...",
         "icon": "$(search)"
