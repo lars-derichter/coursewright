@@ -130,6 +130,14 @@ evaluations/
 Reference materials, inspiration, and notes. Not served by Docusaurus or synced
 to Canvas. See the [sources guide](sources.md) for conventions.
 
+### Context (Private)
+
+Per-course design facts and the style rules AI skills read before drafting
+anything: `context/course-context.md` and `context/writing-style.md`. Not served
+by Docusaurus or synced to Canvas. See
+[writing style guide](../context/writing-style.md) and
+[course context](../context/course-context.md).
+
 ## Course Name, Language and Labels
 
 `course.config.yml` at the project root names the course and sets the language
