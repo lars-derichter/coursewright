@@ -222,8 +222,11 @@ cp src/css/themes/github.css sources/my-theme.css
 theme: sources/my-theme.css
 ```
 
-Then edit the colours. Restart `npm start` to see the site change; exports and
-Canvas pages pick it up on the next run.
+Then edit the colours. Restart `npm start` to see the site change; an export
+picks it up on its next run. A Canvas page picks it up the next time it is
+pushed, and a push writes a page only when its file has changed: the sync
+compares markdown, not rendered HTML, so a theme change on its own re-sends
+nothing. Edit and push a page to recolour it.
 
 > [!NOTE]
 >

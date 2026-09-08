@@ -15,6 +15,12 @@
   page already on Canvas shows the new tables after its next push, which happens
   the next time its file changes.
 
+- The theme section of the customisation guide said that exports and Canvas
+  pages pick up a colour change on the next run. Exports do; a Canvas page does
+  not, because a push writes a page only when its markdown changed, and a theme
+  change alters no markdown. The guide now says a page is recoloured the next
+  time it is pushed after an edit.
+
 ## 1.2.0 (2026-09-08)
 
 - `npx course validate` warns about a page whose body opens with a level-1
