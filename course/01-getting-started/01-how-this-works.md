@@ -21,6 +21,14 @@ with the terminal command named alongside it for anyone who would rather type.
 - **Where students read it** is your choice: the course website, a printed or
   downloaded handout, or Canvas. All three are built from the same files.
 
+> [!NOTE]
+>
+> Five folders are yours: `course/` (what students see), `sources/` (lesson
+> plans and notes), `context/` (the style guide and course-design facts),
+> `evaluations/` (exams and tests), and the root `README.md`. Everything else
+> you see in VS Code's file explorer — `lib/`, `cli/`, `docs/`, config files —
+> is tooling. You'll never need to open it.
+
 Your files are the source of truth. The website, the handout and Canvas are each
 a place you publish them to, the way a printed book is one output of a
 manuscript and never the manuscript itself.

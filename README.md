@@ -87,7 +87,9 @@ version control, whatever it ends up published to: a course website, a printed
 reader, Canvas, or all three. You don't need to be technical:
 [your first course](docs/first-course.md) starts from a computer with nothing
 installed, and there is a [git and GitHub guide](docs/git-and-github.md) for
-complete beginners.
+complete beginners. The project has many other files; day to day, only
+`course/`, `sources/`, `context/`, `evaluations/` and `README.md` are yours to
+edit.
 
 ## Quick Start
 

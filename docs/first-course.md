@@ -145,6 +145,14 @@ before continuing.
 
 From here on, every step in this guide happens with this folder open in VS Code.
 
+> [!NOTE]
+>
+> The project has plenty of files you will never open: `lib/`, `cli/`, `docs/`,
+> config files, all tooling. Five things are yours: `course/` (what students
+> see), `sources/` (lesson plans and notes), `context/` (the style guide and
+> course-design facts), `evaluations/` (exams and tests), and `README.md`.
+> Everything else runs itself.
+
 ## 7. Install the Tooling
 
 Two commands, typed in the terminal. These are the ones everybody types; the
