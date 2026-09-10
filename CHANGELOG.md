@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- `.github/workflows/release.yml` publishes the GitHub release when a `v*` tag
+  is pushed, titled with the version and carrying that version's `CHANGELOG.md`
+  section as the notes. Step 5 of the release procedure was the only step with
+  no command attached, and both 1.2.0 and 1.3.0 were tagged without a release to
+  show for it, so pushing the tag is now the whole of it. It is gated to this
+  repository the way `test.yml` is, so a course project that tags its own
+  material hears nothing from it. `scripts/changelog-section.js` cuts the
+  section out and fails loudly when the changelog has none for the version, and
+  `npm test` now checks that the version in `package.json` has a section at all,
+  which catches a skipped step 1 before the tag is cut rather than after it is
+  public.
+
 ## 1.3.0 (2026-09-08)
 
 - The theme comment in the shipped `course.config.yml` pointed at

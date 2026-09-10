@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
+const { sectionFor } = require('../scripts/changelog-section.js');
+
 const ROOT = path.join(__dirname, '..');
 
 /**
@@ -54,6 +56,22 @@ describe('a release', () => {
       version,
       /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/,
       `package.json version ${JSON.stringify(version)} is not MAJOR.MINOR.PATCH`,
+    );
+  });
+
+  it('has a changelog section under the version it records', () => {
+    // Step 1 of the release procedure renames `## Unreleased` to the version
+    // being released, and `.github/workflows/release.yml` publishes that
+    // section as the release notes. Miss the rename and the workflow fails
+    // after the tag is already public, which is the expensive moment to find
+    // out; this fails in `npm test`, before step 3 lets the release proceed.
+    const { 'package.json': version } = recordedVersions();
+    const changelog = fs.readFileSync(path.join(ROOT, 'CHANGELOG.md'), 'utf8');
+    assert.notEqual(
+      sectionFor(changelog, version),
+      null,
+      `CHANGELOG.md has no "## ${version}" section, and package.json says ` +
+        `${version} is the version. See docs/contributing.md#releasing.`,
     );
   });
 });

@@ -1,0 +1,72 @@
+name: Release
+
+# Publish the GitHub release for a tag that has just been pushed, with the
+# tag's own changelog section as the notes.
+#
+# This is step 5 of docs/contributing.md#releasing, and it was the only step
+# with no command attached: 1.2.0 and 1.3.0 were both tagged and pushed without
+# one, because nothing failed when it was skipped. Pushing the tag is now the
+# whole of the release.
+#
+# It deliberately runs no checks of its own. The tag is cut from a commit that
+# already passed the full suite in step 3 and the `npx course check` pre-push
+# hook, and `test.yml` and `course-checks.yml` both run against the tag in
+# parallel with this. Gating the release on those would trade a release that is
+# published a minute early for one that needs a `workflow_run` chain to publish
+# at all, and an unpublished release is the failure this file exists to fix.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to publish, as in v1.3.0
+        required: true
+
+jobs:
+  release:
+    # Only where this tooling lives, for the reason `test.yml` gives at
+    # length: every course project inherits this file, and a course that tags
+    # its own material has no release procedure for this to be step 5 of, no
+    # `## 1.3.0` in a CHANGELOG.md it did not write, and no reason to hear
+    # about either.
+    if: endsWith(github.repository, '/coursewright')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # No `npm ci`: scripts/changelog-section.js requires Node built-ins only,
+      # so the notes are cut before anything is installed.
+      - id: notes
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          node scripts/changelog-section.js "$TAG" > "$RUNNER_TEMP/notes.md"
+          echo "path=$RUNNER_TEMP/notes.md" >> "$GITHUB_OUTPUT"
+
+      # Re-running this workflow on a tag that already has its release is a
+      # normal thing to do after fixing a failure above, so an existing release
+      # has its notes brought up to date rather than failing the run. Which of
+      # the two happened is in the log.
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          NOTES: ${{ steps.notes.outputs.path }}
+        run: |
+          VERSION="${TAG#v}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG exists; updating its notes."
+            gh release edit "$TAG" --title "$VERSION" --notes-file "$NOTES"
+          else
+            echo "Creating release $TAG."
+            gh release create "$TAG" --title "$VERSION" --notes-file "$NOTES" --verify-tag
+          fi

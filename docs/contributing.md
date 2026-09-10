@@ -299,11 +299,34 @@ command) the major.
    git checkout develop && git push
    ```
 
-5. On GitHub, create a release from the tag, with the changelog section as its
-   notes.
+   `--follow-tags` is the word that carries the tag, and a plain `git push` here
+   leaves it behind on your machine: `main` publishes, the release never
+   happens, and nothing anywhere says so. Making it the default costs nothing,
+   since the flag pushes only annotated tags reachable from what is being pushed
+   anyway:
+
+   ```bash
+   git config --global push.followTags true
+   ```
+
+5. Nothing. `.github/workflows/release.yml` runs on the pushed tag and creates
+   the GitHub release from it, titled with the version and carrying that
+   version's `CHANGELOG.md` section as its notes.
+
+   It fails rather than publishing empty notes when the changelog has no section
+   for the version, which is what a skipped step 1 looks like from here.
+   `npm test` catches that before the tag is cut, so it should not get this far.
+   If it does, fix the changelog on `develop` and re-run the workflow from the
+   Actions tab, or publish by hand:
+
+   ```bash
+   node scripts/changelog-section.js v1.0.1 > notes.md
+   gh release create v1.0.1 --title 1.0.1 --notes-file notes.md
+   ```
 
 Pushing `main` is what publishes: it deploys the site and is what every course
-project's next update pulls. Nothing else about a release reaches anyone.
+project's next update pulls. Pushing the tag is what announces it, through the
+release workflow above. Nothing else about a release reaches anyone.
 
 The tag is what lets a course project name the release it is on. A project made
 with **Use this template** shares no history with this repository, so git there
