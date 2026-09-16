@@ -66,17 +66,29 @@ A horizontal rule as a separator:
 
 ## Alerts
 
-::: {.alert .note} A note alert, for context and background. :::
+::: {.alert .note}
+A note alert, for context and background.
+:::
 
-::: {.alert .tip} A tip alert with a useful suggestion. :::
+::: {.alert .tip}
+A tip alert with a useful suggestion.
+:::
 
-::: {.alert .important} An important alert that asks for attention. :::
+::: {.alert .important}
+An important alert that asks for attention.
+:::
 
-::: {.alert .warning} A warning alert. :::
+::: {.alert .warning}
+A warning alert.
+:::
 
-::: {.alert .caution} A caution alert, for risks. :::
+::: {.alert .caution}
+A caution alert, for risks.
+:::
 
-::: {.alert .check} A check alert, for a checkpoint or a self-test. :::
+::: {.alert .check}
+A check alert, for a checkpoint or a self-test.
+:::
 
 ## Code
 
@@ -112,11 +124,14 @@ An ordered list:
 
 ## Special Blocks
 
-::: {.link-card title="External resource" url="https://example.com/article"} :::
+::: {.link-card title="External resource" url="https://example.com/article"}
+:::
 
-::: {.attachment name="example-document.pdf"} :::
+::: {.attachment name="example-document.pdf"}
+:::
 
-::: {.page-break} :::
+::: {.page-break}
+:::
 
 # Second Chapter
 

@@ -15,3 +15,8 @@ course/**/_files/*.md
 # nobody edited by hand, and running Prettier over it is undone by the next
 # sync anyway
 .canvas-sync.json
+
+# The style sample is pandoc markdown with fenced divs (`::: {.alert .note}`),
+# which Prettier reads as plain paragraphs: with proseWrap it joins each fence
+# onto the line below and pandoc then prints the block as literal text
+export-styles/sample.md
