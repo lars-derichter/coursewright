@@ -97,6 +97,48 @@ local function render_docx_alert(el)
   return blocks
 end
 
+-- A paragraph that ends in a colon, or is no more than three words long,
+-- introduces the block after it ("Voorbeeld:" or "Bijv." and then the code).
+-- Typst keeps a sticky block together with what follows, so the intro line
+-- never ends a page on its own. PDF only: Word would need keep-with-next on the
+-- paragraph, which pandoc cannot set without a custom style.
+local INTRODUCES = {
+  CodeBlock = true, BulletList = true, OrderedList = true,
+  DefinitionList = true, Div = true, Table = true,
+}
+
+local function last_str(inlines)
+  local last = inlines[#inlines]
+  if last == nil then return nil end
+  if last.t == "Str" then return last.text end
+  if last.content and last.t ~= "Link" then return last_str(last.content) end
+  return nil
+end
+
+local function is_intro(para)
+  local text = last_str(para.content)
+  if text and text:sub(-1) == ":" then return true end
+  local words = 0
+  for _ in pandoc.utils.stringify(para):gmatch("%S+") do words = words + 1 end
+  return words <= 3
+end
+
+local function keep_with_next(blocks)
+  if not FORMAT:match("typst") then return nil end
+  local out = pandoc.List()
+  for i, b in ipairs(blocks) do
+    local nxt = blocks[i + 1]
+    if b.t == "Para" and nxt and INTRODUCES[nxt.t] and is_intro(b) then
+      out:insert(typst_open("#block(sticky: true)["))
+      out:insert(b)
+      out:insert(typst_open("]"))
+    else
+      out:insert(b)
+    end
+  end
+  return out
+end
+
 local function render_docx_linkcard(el)
   local title = el.attributes["title"] or ""
   local url = el.attributes["url"] or ""
@@ -150,10 +192,12 @@ local function capture_labels(meta)
   end
 end
 
--- Two sequential filter tables: within a single table pandoc runs Meta *after*
--- the block filters, so the labels must be captured in a pass of their own
--- before any Div is rendered.
+-- Three sequential filter tables: within a single table pandoc runs Meta
+-- *after* the block filters, so the labels must be captured in a pass of their
+-- own before any Div is rendered; and keep_with_next has to see an alert while
+-- it is still a Div, before the third pass turns it into raw Typst.
 return {
   { Meta = capture_labels },
+  { Blocks = keep_with_next },
   { Div = div },
 }

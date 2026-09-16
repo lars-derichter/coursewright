@@ -68,12 +68,25 @@ $endif$
   #block(inset: (left: 1.5em, top: -0.4em))[#it.description]
 ]
 
+// Alerts, code, tables and lists read badly when split. A block short enough
+// to move to the next page without leaving most of it empty stays whole; a
+// taller one breaks, and Typst's own rule still forbids a lone first or last
+// line. `make` builds the block for a given `breakable`, measured at the width
+// of the container it lands in. `ratio` is the share of the page's text area
+// up to which a block moves whole: half by default, a quarter for lists, which
+// are long and frequent enough that moving bigger ones empties too many pages.
+#let keep-together(make, ratio: 0.5) = layout(size => {
+  let height = measure(make(true), width: size.width).height
+  make(height > size.height * ratio)
+})
+
 // Called by filter.lua for every `::: {.alert .<kind>}` block. The kinds match
 // ALERT_KINDS in lib/config/theme.js and the per-kind Alert styles in
-// reference.docx.
+// reference.docx. The title is a sticky block, so an alert tall enough to
+// break never leaves its title alone at the foot of a page.
 #let alert(kind, title, body) = {
   let palette = alert-colors.at(kind, default: alert-colors.note)
-  block(
+  keep-together(breakable => block(
     width: 100%,
     stroke: (left: 3pt + palette.fg),
     fill: palette.bg,
@@ -81,11 +94,12 @@ $endif$
     radius: (top-right: 4pt, bottom-right: 4pt),
     above: 1.2em,
     below: 1.2em,
+    breakable: breakable,
   )[
-    #text(weight: "bold", fill: palette.fg)[#title]
+    #block(sticky: true, above: 0pt, text(weight: "bold", fill: palette.fg)[#title])
     #v(3pt)
     #body
-  ]
+  ])
 }
 
 #let linkcard(title, url) = block(
@@ -166,16 +180,20 @@ $endif$
     it
   }
   // A rule under H2 gives the long documents a visible spine, as on the site.
+  // The wrapper replaces the heading's own block, so it has to be sticky
+  // itself or the heading can end a page.
   show heading.where(level: 2): it => block(
     width: 100%,
     stroke: (bottom: 0.5pt + border),
     inset: (bottom: 5pt),
+    sticky: true,
+    breakable: false,
     it,
   )
   // H5/H6 are small bold-caps labels, not numbered headings.
-  show heading.where(level: 5): it => block(above: 1.4em, below: 0.7em,
+  show heading.where(level: 5): it => block(above: 1.4em, below: 0.7em, sticky: true,
     text(size: 10pt, weight: "bold", fill: fg, tracking: 0.05em, upper(it.body)))
-  show heading.where(level: 6): it => block(above: 1.4em, below: 0.7em,
+  show heading.where(level: 6): it => block(above: 1.4em, below: 0.7em, sticky: true,
     text(size: 10pt, weight: "bold", fill: fg-muted, tracking: 0.05em, upper(it.body)))
 
   // Replace the quote outright: a `set block` rule would style both the quote
@@ -189,14 +207,15 @@ $endif$
     text(fill: fg-muted, it.body),
   )
 
-  show raw.where(block: true): it => block(
+  show raw.where(block: true): it => keep-together(breakable => block(
     width: 100%,
     fill: surface-subtle,
     stroke: 0.5pt + border,
     inset: 10pt,
     radius: 4pt,
+    breakable: breakable,
     text(font: codefont, size: 0.85em, it),
-  )
+  ))
   show raw.where(block: false): it => box(
     fill: code-bg,
     inset: (x: 3pt, y: 0pt),
@@ -216,6 +235,14 @@ $endif$
   show figure.where(kind: table): set figure.caption(position: top)
   show figure.where(kind: image): set figure.caption(position: bottom)
   show figure.caption: set text(size: 9pt, fill: fg-muted)
+  // Pandoc wraps every table in a figure, and a figure is unbreakable: a table
+  // taller than the page would run off it. Let it break (the header row
+  // repeats), under the same rule as code: a short one moves whole instead.
+  show figure.where(kind: table): set block(breakable: true)
+  show figure.where(kind: table): it => keep-together(breakable => block(breakable: breakable, it))
+  // Lists too, so a short list never strands its first item at the foot of a page.
+  show list: it => keep-together(ratio: 0.25, breakable => block(breakable: breakable, it))
+  show enum: it => keep-together(ratio: 0.25, breakable => block(breakable: breakable, it))
 
   show outline.entry.where(level: 1): set block(above: 1em)
   show outline.entry.where(level: 1): set text(weight: "bold")

@@ -81,15 +81,15 @@ files, the root of `export-styles/`). `sources/` is protected during
 them, which is how you change one part of a shipped style without forking the
 rest.
 
-| File             | Where     | Renderer    | Controls                                                                                                                                                                                                                          |
-| ---------------- | --------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `template.typ`   | per style | PDF (Typst) | Fonts, sizes, margins, title page, TOC, alert/link-card/attachment styling, page-break behaviour. Reads its colours from the theme.                                                                                               |
-| `reference.docx` | per style | DOCX (Word) | All Word paragraph and character styles: `Normal`, `Heading 1/2/3`, `Hyperlink`, and the custom styles listed below, including their colours.                                                                                     |
-| `logo.png`       | per style | PDF (Typst) | Cover logo. The filename is fixed. Optional: without it the cover simply has no logo.                                                                                                                                             |
-| `fonts/`         | per style | PDF (Typst) | Fonts shipped with the style, passed to Typst via `TYPST_FONT_PATHS` so they render where not installed. Ship only fonts whose licence allows redistribution; `generic` ships none and relies on Helvetica/Arial.                 |
-| `defaults.yml`   | shared    | both        | Pandoc defaults shared by every export (TOC depth). Layout defaults deliberately live in `template.typ` instead, so `--var` can override them. Heading numbering is native to both templates, so `number-sections` stays `false`. |
-| `filter.lua`     | shared    | both        | Maps the exporter's `.alert`, `.link-card`, `.attachment`, and `.page-break` divs onto Typst function calls (PDF) or custom-style paragraphs (DOCX). Rarely needs editing.                                                        |
-| `sample.md`      | shared    | both        | The kitchen-sink preview document (see [Previewing a style](#previewing-a-style)).                                                                                                                                                |
+| File             | Where     | Renderer    | Controls                                                                                                                                                                                                                               |
+| ---------------- | --------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `template.typ`   | per style | PDF (Typst) | Fonts, sizes, margins, title page, TOC, alert/link-card/attachment styling, page-break behaviour. Reads its colours from the theme.                                                                                                    |
+| `reference.docx` | per style | DOCX (Word) | All Word paragraph and character styles: `Normal`, `Heading 1/2/3`, `Hyperlink`, and the custom styles listed below, including their colours.                                                                                          |
+| `logo.png`       | per style | PDF (Typst) | Cover logo. The filename is fixed. Optional: without it the cover simply has no logo.                                                                                                                                                  |
+| `fonts/`         | per style | PDF (Typst) | Fonts shipped with the style, passed to Typst via `TYPST_FONT_PATHS` so they render where not installed. Ship only fonts whose licence allows redistribution; `generic` ships none and relies on Helvetica/Arial.                      |
+| `defaults.yml`   | shared    | both        | Pandoc defaults shared by every export (TOC depth). Layout defaults deliberately live in `template.typ` instead, so `--var` can override them. Heading numbering is native to both templates, so `number-sections` stays `false`.      |
+| `filter.lua`     | shared    | both        | Maps the exporter's `.alert`, `.link-card`, `.attachment`, and `.page-break` divs onto Typst function calls (PDF) or custom-style paragraphs (DOCX), and keeps an intro line with the block it introduces (PDF). Rarely needs editing. |
+| `sample.md`      | shared    | both        | The kitchen-sink preview document (see [Previewing a style](#previewing-a-style)).                                                                                                                                                     |
 
 The custom Word styles `reference.docx` must define (pandoc matches on the
 spaced display names): `Alert Title <Kind>` and `Alert Body <Kind>` for each of
@@ -209,6 +209,29 @@ typst compile export-styles/generic/logo.typ export-styles/generic/logo.png --pp
 The source sets `fill: none` and an auto-sized page, so the PNG comes out
 transparent and cropped to the wordmark.
 
+## Page Breaks in the PDF
+
+Both shipped templates decide where a page may break with three rules:
+
+- **A short block moves whole rather than splitting.** An alert, a code block or
+  a table up to half the page's text area, and a list up to a quarter, goes to
+  the next page in one piece. The `keep-together` helper in `template.typ`
+  measures each block and sets `breakable` accordingly; a taller block still
+  breaks, and Typst never leaves a single line of it behind. The share is the
+  helper's `ratio` argument, so a forked template can tune it.
+- **A title stays with its body.** Every heading is sticky, including the
+  generic style's H2 rule and both styles' H5/H6 label blocks, and so is the
+  title of an alert tall enough to break. `filter.lua` gives the same to a
+  paragraph that ends in a colon or is at most three words long ("Voorbeeld:",
+  "Bijv.") when a code block, list, table or alert follows it.
+- **A long table breaks** with its header row repeated on every page. Pandoc
+  wraps every table in a figure, and Typst does not break a figure unless told
+  to; without the rule a table taller than the page runs off it.
+
+The price is white space: a block that moves whole leaves a gap above the break,
+and a sticky chain (heading, intro line, code block) moves together. Expect a
+few more pages than an export that splits freely.
+
 ## DOCX Degradations
 
 DOCX is a lossy target next to the Typst PDF. These are known and accepted:
@@ -216,6 +239,10 @@ DOCX is a lossy target next to the Typst PDF. These are known and accepted:
 - **Table of contents.** Word writes the TOC as a field that shows empty until
   you update it: open the document, select all (Ctrl/Cmd-A), then press F9.
   Heading numbers need no such step: they are native Word numbering.
+- **Page breaks.** Word keeps a heading and an alert title with what follows,
+  through the styles in `reference.docx`. The rest of the
+  [PDF rules](#page-breaks-in-the-pdf) (short blocks moving whole, intro lines
+  sticking to their block, long tables) are Typst's alone.
 - **`--var` font/margin variables** affect the PDF only. Style the DOCX through
   `reference.docx`.
 - **The theme** recolours the site, Canvas and the PDF, but not the DOCX: Word

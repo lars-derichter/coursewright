@@ -70,9 +70,23 @@ $endif$
   ),
 )
 
+// Alerts, code, tables and lists read badly when split. A block short enough
+// to move to the next page without leaving most of it empty stays whole; a
+// taller one breaks, and Typst's own rule still forbids a lone first or last
+// line. `make` builds the block for a given `breakable`, measured at the width
+// of the container it lands in. `ratio` is the share of the page's text area
+// up to which a block moves whole: half by default, a quarter for lists, which
+// are long and frequent enough that moving bigger ones empties too many pages.
+#let keep-together(make, ratio: 0.5) = layout(size => {
+  let height = measure(make(true), width: size.width).height
+  make(height > size.height * ratio)
+})
+
+// The title is a sticky block, so an alert tall enough to break never leaves
+// its title alone at the foot of a page.
 #let alert(kind, title, body) = {
   let palette = alert-colors.at(kind, default: alert-colors.note)
-  block(
+  keep-together(breakable => block(
     width: 100%,
     stroke: (left: 3pt + palette.fg),
     fill: palette.bg,
@@ -80,11 +94,13 @@ $endif$
     radius: (top-right: 3pt, bottom-right: 3pt),
     above: 1.2em,
     below: 1.2em,
+    breakable: breakable,
   )[
-    #text(weight: "bold", fill: palette.fg.darken(10%))[#title]
+    #block(sticky: true, above: 0pt,
+      text(weight: "bold", fill: palette.fg.darken(10%))[#title])
     #v(2pt)
     #body
-  ]
+  ])
 }
 
 #let linkcard(title, url) = block(
@@ -165,21 +181,23 @@ $endif$
     pagebreak(weak: true)
     it
   }
-  // H5/H6 are small bold-caps labels in the TM template, not numbered.
-  show heading.where(level: 5): it => block(above: 1.4em, below: 0.8em,
+  // H5/H6 are small bold-caps labels in the TM template, not numbered. The
+  // blocks replace the heading's own, so they have to be sticky themselves.
+  show heading.where(level: 5): it => block(above: 1.4em, below: 0.8em, sticky: true,
     text(font: font, size: 11pt, weight: "bold", fill: heading-color, upper(it.body)))
-  show heading.where(level: 6): it => block(above: 1.4em, below: 0.8em,
+  show heading.where(level: 6): it => block(above: 1.4em, below: 0.8em, sticky: true,
     text(font: font, size: 11pt, weight: "bold", fill: tm-navy, upper(it.body)))
 
   show quote.where(block: true): set text(style: "italic", fill: tm-muted)
 
-  show raw.where(block: true): it => block(
+  show raw.where(block: true): it => keep-together(breakable => block(
     width: 100%,
     fill: tm-grey,
     inset: 8pt,
     radius: 3pt,
+    breakable: breakable,
     text(font: codefont, size: 0.85em, it),
-  )
+  ))
   show raw.where(block: false): it => box(
     fill: tm-grey,
     inset: (x: 3pt, y: 0pt),
@@ -203,6 +221,14 @@ $endif$
   show figure.where(kind: table): set figure.caption(position: top)
   show figure.where(kind: image): set figure.caption(position: bottom)
   show figure.caption: set text(size: 9pt, style: "italic")
+  // Pandoc wraps every table in a figure, and a figure is unbreakable: a table
+  // taller than the page would run off it. Let it break (the header row
+  // repeats), under the same rule as code: a short one moves whole instead.
+  show figure.where(kind: table): set block(breakable: true)
+  show figure.where(kind: table): it => keep-together(breakable => block(breakable: breakable, it))
+  // Lists too, so a short list never strands its first item at the foot of a page.
+  show list: it => keep-together(ratio: 0.25, breakable => block(breakable: breakable, it))
+  show enum: it => keep-together(ratio: 0.25, breakable => block(breakable: breakable, it))
 
   // TOC: level-1 entries bold navy, per the TM toc styles.
   show outline.entry.where(level: 1): set block(above: 1em)
