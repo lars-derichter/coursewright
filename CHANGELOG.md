@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.0 (2026-09-16)
 
 - PDF exports no longer split what reads as one thing. An alert, a code block or
   a table up to half the page's text area, and a list up to a quarter, moves
