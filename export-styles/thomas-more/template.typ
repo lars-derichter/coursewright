@@ -144,7 +144,10 @@ $endif$
   font: ("Arial", "Nunito"),
   codefont: ("DejaVu Sans Mono",),
   fontsize: 12pt,
-  sectionnumbering: "1.1.",
+  // Off unless `export.number_headings` in course.config.yml (or a
+  // `--var section-numbering=1.1.`) passes a pattern in: module and page
+  // titles often carry a number of their own.
+  sectionnumbering: none,
   pagenumbering: "1",
   toc: false,
   toc-depth: 2,

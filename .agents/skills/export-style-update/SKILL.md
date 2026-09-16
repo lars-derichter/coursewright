@@ -51,7 +51,7 @@ document/site", hand off to `/export-style-init`.
    | Body font/size           | `font:`/`fontsize:` in `conf()`                                  | `Normal` + theme `<a:latin>`                             |
    | Margins / paper          | `margin:`/`paper:` in `conf()`                                   | `<w:pgMar>`/`<w:pgSz>`                                   |
    | Cover logo               | `sources/export-style/logo.png` (PDF only)                       | —                                                        |
-   | Heading numbering        | `sectionnumbering:` in `conf()`                                  | the `numId 900` numbering + heading `numPr`              |
+   | Heading numbering        | `export.number_headings` in `course.config.yml` (both formats)   | —                                                        |
    | Bundled font files       | `sources/export-style/fonts/` (PDF only, via `TYPST_FONT_PATHS`) | install the font on the machine that opens the DOCX      |
 
    Apply each format-agnostic change to **both sides of its row** (the

@@ -545,6 +545,11 @@ async function exportCmd(paths = [], options = {}) {
 
   fs.mkdirSync(EXPORTS_DIR, { recursive: true });
 
+  // Loaded before the sample branch: heading numbering is a course setting
+  // and the sample should show the course's own choice.
+  const config = loadCourseConfig();
+  const numberSections = config.export.number_headings;
+
   // --sample: render the shipped kitchen-sink document. The sample is shared by
   // every style, so pandoc needs both its own directory and the selected
   // style's on the resource path to find `![](logo.png)`.
@@ -562,12 +567,13 @@ async function exportCmd(paths = [], options = {}) {
       format,
       options,
       resourcePath,
+      numberSections,
     );
     log.info(`[export] Wrote ${path.relative(process.cwd(), output)}`);
     return;
   }
 
-  const { title, tagline, language, labels } = loadCourseConfig();
+  const { title, tagline, language, labels } = config;
 
   let mode;
   try {
@@ -610,7 +616,16 @@ async function exportCmd(paths = [], options = {}) {
   fs.writeFileSync(mdPath, combined, 'utf8');
 
   try {
-    await run(style, theme, mdPath, output, format, options, COURSE_DIR);
+    await run(
+      style,
+      theme,
+      mdPath,
+      output,
+      format,
+      options,
+      COURSE_DIR,
+      numberSections,
+    );
   } finally {
     if (!options.keepMarkdown) {
       try {
@@ -630,7 +645,16 @@ async function exportCmd(paths = [], options = {}) {
 }
 
 /** Run pandoc for one input file with the resolved style assets and theme. */
-async function run(style, theme, input, output, format, options, resourcePath) {
+async function run(
+  style,
+  theme,
+  input,
+  output,
+  format,
+  options,
+  resourcePath,
+  numberSections,
+) {
   try {
     await runPandoc({
       input,
@@ -644,6 +668,7 @@ async function run(style, theme, input, output, format, options, resourcePath) {
       // Theme colours travel as pandoc variables so template.typ reads them
       // instead of hardcoding a palette. An explicit --var still wins.
       variables: { ...themeVariables(theme), ...(options.var || {}) },
+      numberSections,
       logo: style.logo,
       fontsDir: style.fontsDir,
     });

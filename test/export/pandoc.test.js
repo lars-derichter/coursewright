@@ -43,6 +43,20 @@ describe('buildPandocArgs', () => {
     assert.ok(!args.includes('--template'));
   });
 
+  it('numbers sections only when asked, after the defaults file', () => {
+    const without = buildPandocArgs({ ...base, defaultsFile: 'd.yml' });
+    assert.ok(!without.includes('--number-sections'));
+
+    const args = buildPandocArgs({
+      ...base,
+      defaultsFile: 'd.yml',
+      numberSections: true,
+    });
+    assert.ok(args.includes('--number-sections'));
+    // Later than --defaults, or its `number-sections: false` would win.
+    assert.ok(args.indexOf('--number-sections') > args.indexOf('--defaults'));
+  });
+
   it('passes each variable as its own -V pair', () => {
     const args = buildPandocArgs({
       ...base,

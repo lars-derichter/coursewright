@@ -429,6 +429,10 @@ npx course export [options] [paths...]
 nor typst, and ignores `--style`, `--template`, `--reference-doc`, `--var` and
 `--keep-markdown`.
 
+`--var section-numbering=1.1.` numbers the headings of one PDF run, whatever
+`export.number_headings` in `course.config.yml` says; see
+[Customisation](customisation.md#branding).
+
 With no path, module, TOC or `--flagged` scope, `export` renders the whole
 course. See [Exporting](exporting.md) for the install requirements and every
 scope, and [Export styling](export-styling.md) for `--var` and the style files.

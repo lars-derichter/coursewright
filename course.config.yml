@@ -20,9 +20,12 @@ theme: github
 # PDF and DOCX layout: typography, margins, cover, bundled fonts. Built-in
 # styles: generic, thomas-more. The value is a folder name under
 # export-styles/, or a path to a folder of your own. See
-# docs/export-styling.md.
+# docs/export-styling.md. `number_headings: true` puts 1, 1.1, 1.1.1 in
+# front of every heading in both formats; off by default, because module and
+# page titles often carry a number of their own.
 export:
   style: generic
+  # number_headings: true
 
 # Pre-ship checks: what `npx course check` runs and the pre-push hook gates.
 # `links.roots` lists the folders check-links scans for broken relative links

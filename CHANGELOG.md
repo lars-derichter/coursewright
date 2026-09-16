@@ -16,25 +16,24 @@
   template can tune the threshold. The price is a few more pages, since a block
   that moves whole leaves a gap above the break.
 
+- Heading numbering is off by default, in both export formats and both shipped
+  styles; `export.number_headings: true` in `course.config.yml` turns it on.
+  Every module or page title that carried a number of its own came out doubled
+  ("1. 1. Je eerste website", "5. 5a. CSS"), because `template.typ` numbered
+  headings in Typst and `reference.docx` numbered Heading 1-4 natively, and a
+  `--flagged` export numbered items "1.0.1." where it drops a subfolder heading.
+  With the key on, pandoc's `--number-sections` numbers both formats the same
+  way, "1", "1.1". The native numbering is gone from both shipped
+  `reference.docx` files; a forked style keeps its own copy and should drop the
+  `numPr` from its heading styles too, or the DOCX doubles again with the key
+  on. `--var section-numbering=1.1.` still numbers a single PDF run with a Typst
+  pattern of your choice.
+
 - The style sample rendered its alerts, link card, attachment and page break as
   literal `::: {...}` text: an earlier Prettier pass had joined every fenced div
   onto one line, which pandoc does not read as a div. The fences are back on
   their own lines and `export-styles/sample.md` is in `.prettierignore`, since
   Prettier's markdown parser has no notion of a fenced div.
-
-- PDF exports no longer split what reads as one thing. An alert, a code block or
-  a table up to half the page's text area, and a list up to a quarter, moves
-  whole to the next page instead of breaking; a taller one still breaks, with
-  Typst's own guard against a lone first or last line. An alert that does break
-  keeps its title with the body; the generic style's H2 rule and both styles'
-  H5/H6 labels are sticky like every other heading; and `filter.lua` keeps a
-  paragraph that ends in a colon or is at most three words long ("Voorbeeld:",
-  "Bijv.") with the code, list, table or alert it introduces. A table taller
-  than the page used to run off it, because pandoc wraps every table in a figure
-  and Typst does not break figures: it now breaks with its header row repeated.
-  The `keep-together` helper in `template.typ` takes a `ratio`, so a forked
-  template can tune the threshold. The price is a few more pages, since a block
-  that moves whole leaves a gap above the break.
 
 - `.github/workflows/release.yml` publishes the GitHub release when a `v*` tag
   is pushed, titled with the version and carrying that version's `CHANGELOG.md`

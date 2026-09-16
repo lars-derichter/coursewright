@@ -177,11 +177,19 @@ Branding splits along two axes, both set in `course.config.yml`:
 theme: github # colour everywhere, plus the site's fonts
 export:
   style: generic # PDF and DOCX layout, fonts and cover
+  number_headings: false # 1, 1.1, 1.1.1 in front of every heading
 ```
 
 The shipped defaults are deliberately neutral. `thomas-more` is available for
 both keys as a worked example of full institutional branding; set both to it for
 the complete house style.
+
+Headings come out unnumbered unless `export.number_headings` is `true`. Module
+and page titles often carry a number of their own ("1. Je eerste website"),
+which a generated one in front would double. The switch numbers PDF and DOCX the
+same way, "1", "1.1", "1.1.1", down to the fourth level;
+`npx course export --var section-numbering=1.1.` numbers a single PDF run
+instead, with a Typst numbering pattern of your choice.
 
 ### Colour: The Theme
 

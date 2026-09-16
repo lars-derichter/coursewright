@@ -7,6 +7,10 @@
 # command-line `-V key=value` with a `variables:` entry into a list instead of
 # overriding it, which would break `--var fontsize=13pt`. Keeping those out of
 # this file lets --var work as a clean override.
+#
+# Heading numbering is off here and in both templates; `export.number_headings`
+# in course.config.yml makes the exporter pass --number-sections, which wins
+# over this file for PDF (via the section-numbering variable) and DOCX alike.
 
 number-sections: false
 toc-depth: 2

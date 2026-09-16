@@ -149,6 +149,33 @@ describe('loadCourseConfig', () => {
     assert.match(warnMock.mock.calls[0].arguments[0], /unknown key "langauge"/);
   });
 
+  it('leaves heading numbering off unless export.number_headings says so', () => {
+    assert.equal(loadCourseConfig(tmpDir).export.number_headings, false);
+    _clearCache();
+    writeConfig(['export:', '  number_headings: true', ''].join('\n'));
+    assert.equal(loadCourseConfig(tmpDir).export.number_headings, true);
+    assert.equal(warnMock.mock.callCount(), 0);
+  });
+
+  it('warns and keeps numbering off for a non-boolean export.number_headings', () => {
+    writeConfig(['export:', '  number_headings: "false"', ''].join('\n'));
+    assert.equal(loadCourseConfig(tmpDir).export.number_headings, false);
+    assert.equal(warnMock.mock.callCount(), 1);
+    assert.match(
+      warnMock.mock.calls[0].arguments[0],
+      /Ignoring "export\.number_headings".*expected true or false/,
+    );
+  });
+
+  it('warns about unknown keys under export', () => {
+    writeConfig(['export:', '  numbering: true', ''].join('\n'));
+    assert.equal(loadCourseConfig(tmpDir).export.number_headings, false);
+    assert.match(
+      warnMock.mock.calls[0].arguments[0],
+      /unknown key "export\.numbering"/,
+    );
+  });
+
   it('defaults the checks section when it is absent, without warning', () => {
     const config = loadCourseConfig(tmpDir);
     assert.deepEqual(config.checks, {
