@@ -72,9 +72,15 @@ Condensing drops:
 - H3 and below are free: merge, rename or drop them as the condensed text needs.
 - Keep a page's opening sentence when it states the concept; drop it when it
   announces the page.
-- Expect a ratio of 0.4 to 0.6 for a lesson section of ordinary prose. Under 0.3
-  a fact has probably gone; over 0.8 the framing has probably stayed. Verbatim
-  sections sit at 1.0 by definition and pull a pack's total up.
+- Expect the prose you condense to land at 0.4 to 0.6 of its raw size: under 0.3
+  a fact has probably gone, over 0.8 the framing has probably stayed. A
+  section's printed ratio is higher, because its code blocks, cards, summary and
+  homework tasks are verbatim: 0.8 to 0.9 for a lesson whose summary and cards
+  are verbatim, and a pack that ends in a glossary lands around 0.85. To shrink
+  a pack further, the lever is the verbatim list, not harder condensing. With
+  the summary pages verbatim, a content page condenses to what its summary does
+  not already say; without them, the content pages carry the facts and each
+  summary condenses to its headings and what the content pages leave out.
 
 ## What the Check Enforces
 
