@@ -53,6 +53,12 @@ predictable for both the reader and the model:
   [course-context.md](../context/course-context.md) is referenced, never
   inlined; copies drift. Dense reference payloads (format specs, protocol
   details) go in a `references/` file inside the skill folder, read on demand.
+  Work the model should not do by hand (checking a generated file, diffing two
+  versions of it) goes in a `scripts/` file the skill runs with `node`, on Node
+  built-ins only: the skill folder has no `node_modules` to resolve a package
+  from. Its test lives in `test/skills/`, so `npm test` covers it.
+  `study-pack-build` is the model: `scripts/pack-tool.js` and
+  `test/skills/pack-tool.test.js`.
 - **Course-agnostic.** No hardcoded course vocabulary, module names, or paths
   that exist in only one course; course facts come from `course-context.md` at
   runtime.

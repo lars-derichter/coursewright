@@ -84,9 +84,10 @@ Tests live in `test/` and mirror the layout of the source directories they
 cover: `test/canvas/` for `lib/canvas/`, `test/cli/` for `cli/`, `test/config/`
 for `lib/config/`, `test/convert/` for `lib/convert/`, `test/export/` for
 `lib/export/`, `test/sync/` for `lib/sync/`, `test/plugins/` for `src/plugins/`,
-and `test/vscode/` for the bundled VS Code extension. Each file is named after
-what it covers, e.g. `test/convert/course-scanner.test.js` or
-`test/cli/push-helpers.test.js`.
+`test/scripts/` for `scripts/`, `test/skills/` for the helper scripts under
+`.agents/skills/*/scripts/`, and `test/vscode/` for the bundled VS Code
+extension. Each file is named after what it covers, e.g.
+`test/convert/course-scanner.test.js` or `test/cli/push-helpers.test.js`.
 
 Four places break that pattern. `test/template/` holds
 [the template suite](#the-two-suites), which `npm test` does not run.
