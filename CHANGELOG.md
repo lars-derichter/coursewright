@@ -9,6 +9,15 @@
   saw no text after the hashes. The mask now decides only whether the hashes are
   real; the text is read from the line itself.
 
+- A new skill, `/study-pack-build`, owns the study packs: one recipe per pack in
+  `sources/study-packs/`, the raw export kept in `raw/` next to it, and the
+  compact pack the course ships condensed from that export per the skill's
+  rulebook. A helper script checks that the compact keeps every heading, every
+  code block and every verbatim section, and lists the sections a re-run has to
+  re-condense. Packs were raw exports before, 125 to 190 KB each in a course of
+  twenty lessons: heavy for a chatbot's context and for a student's free tier.
+  `.prettierignore` now covers the recipes and the raw exports.
+
 ## 1.4.0 (2026-09-16)
 
 - PDF exports no longer split what reads as one thing. An alert, a code block or

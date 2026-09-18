@@ -261,6 +261,18 @@ project whitelist.
   before it generates a single pack, and it leaves the rest of `course/` alone.
   A pack is a snapshot, so regenerate it after you edit a lesson; the report
   prints the regenerate command for each one.
+- **`/study-pack-build`** builds the study packs those prompts rely on, from one
+  recipe per pack in `sources/study-packs/`: a TOC file whose frontmatter also
+  names the compact pack and the page-title prefixes whose sections stay
+  verbatim (reference cards, the glossary, the assessment pages). It exports the
+  raw pack with [`npx course export -f md`](exporting.md#markdown), keeps that
+  export in `sources/study-packs/raw/`, condenses it into the pack the course
+  ships as a file item (the facts, the code, the cards and the rules, without
+  the classroom logistics and the encouragement), and checks the compact against
+  the raw with its helper script: every heading, every code block and every
+  verbatim section has to survive. Run with no arguments it regenerates every
+  pack, re-condensing only the sections whose raw changed, so the diff shows
+  real change only.
 - **`/ai-policy-build`** interviews you and writes the student-facing page that
   says where AI may help in this course and where it may not, replacing the stub
   `/ai-tutor-build` leaves. It offers three starting points: the AI Assessment
