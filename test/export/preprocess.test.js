@@ -64,6 +64,14 @@ describe('shiftHeadings', () => {
     assert.equal(shiftHeadings(input, 1), input);
   });
 
+  it('shifts a heading whose text is an inline code span', () => {
+    assert.equal(shiftHeadings('## `void`', 1), '### `void`');
+  });
+
+  it('leaves a heading with no text alone', () => {
+    assert.equal(shiftHeadings('## ', 1), '## ');
+  });
+
   it('is a no-op when shift is 0', () => {
     const input = '# A\n## B';
     assert.equal(shiftHeadings(input, 0), input);

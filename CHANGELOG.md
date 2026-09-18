@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- A heading whose text opens with inline code, `` ## `void` `` for instance,
+  kept its level in every export, so a page's own sections sat at page level in
+  a combined PDF, DOCX or markdown export. The mask that hides code from the
+  heading shift blanked the code span along with the rest, and the shift then
+  saw no text after the hashes. The mask now decides only whether the hashes are
+  real; the text is read from the line itself.
+
 ## 1.4.0 (2026-09-16)
 
 - PDF exports no longer split what reads as one thing. An alert, a code block or
