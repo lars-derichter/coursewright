@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.0 (2026-09-18)
 
 - A heading whose text opens with inline code, `` ## `void` `` for instance,
   kept its level in every export, so a page's own sections sat at page level in
