@@ -254,13 +254,11 @@ project whitelist.
   feedback interpreter, trace trainer, exam coach, quiz-me, extra exercises,
   teach-back), each holding one prompt a student pastes into any chatbot as the
   first message, plus a policy stub when the course has no AI-use page yet.
-  Alongside them go study packs, markdown exports of your own material made with
-  [`npx course export -f md`](exporting.md#markdown) and added as file items, so
-  the chatbot answers from the course instead of its training data. It asks you
-  to confirm that students may upload the material to a third-party service
-  before it generates a single pack, and it leaves the rest of `course/` alone.
-  A pack is a snapshot, so regenerate it after you edit a lesson; the report
-  prints the regenerate command for each one.
+  Alongside them go study packs, which it has `/study-pack-build` build (next
+  bullet), so the chatbot answers from the course instead of its training data.
+  It asks you to confirm that students may upload the material to a third-party
+  service before a single pack is built, and it leaves the rest of `course/`
+  alone.
 - **`/study-pack-build`** builds the study packs those prompts rely on, from one
   recipe per pack in `sources/study-packs/`: a TOC file whose frontmatter also
   names the compact pack and the page-title prefixes whose sections stay

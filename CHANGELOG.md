@@ -18,6 +18,11 @@
   twenty lessons: heavy for a chatbot's context and for a student's free tier.
   `.prettierignore` now covers the recipes and the raw exports.
 
+- `/ai-tutor-build` no longer builds the study packs itself: it proposes them
+  and hands the approved proposal to `/study-pack-build`, which skips its own
+  approval gate when handed one. The AI module's intro page now says a pack is a
+  condensed snapshot of the course.
+
 ## 1.4.0 (2026-09-16)
 
 - PDF exports no longer split what reads as one thing. An alert, a code block or
