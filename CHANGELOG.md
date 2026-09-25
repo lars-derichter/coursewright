@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.1 (2026-09-25)
 
 - Tables in PDF and DOCX exports size their columns to their content. A pipe
   table with a row longer than 72 characters took its column widths from the
