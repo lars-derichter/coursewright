@@ -13,6 +13,10 @@
   inherited the centring of the block pandoc wraps every table in; an explicit
   `:---:` or `---:` still wins.
 
+- The Thomas More style no longer justifies text inside table cells. Its body
+  text is justified, and in a narrow cell that stretched the spaces and
+  hyphenated words, down to a two-word header split as "Metho-de".
+
 ## 1.5.0 (2026-09-18)
 
 - A heading whose text opens with inline code, `` ## `void` `` for instance,

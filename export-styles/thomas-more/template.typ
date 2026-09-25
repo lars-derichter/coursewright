@@ -220,6 +220,9 @@ $endif$
     ),
   )
   show table.cell.where(y: 0): set text(weight: "bold", fill: white)
+  // Body text is justified; a narrow cell would stretch its spaces and
+  // hyphenate its words, so cells stay ragged-right.
+  show table.cell: set par(justify: false)
 
   show figure.where(kind: table): set figure.caption(position: top)
   show figure.where(kind: image): set figure.caption(position: bottom)

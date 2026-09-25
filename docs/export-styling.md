@@ -224,6 +224,10 @@ transparent and cropped to the wordmark.
   inherited that centring in the PDF. An explicit `:---:` (centre) or `---:`
   (right) is kept.
 
+The Thomas More style also turns off justification inside table cells: its body
+text is justified, and a narrow cell stretched its spaces and hyphenated its
+words.
+
 ## Page Breaks in the PDF
 
 Both shipped templates decide where a page may break with three rules:
