@@ -181,6 +181,25 @@ local function div(el)
   return nil
 end
 
+-- Tables. A pipe table with a row longer than 72 characters gets relative
+-- column widths from the dashes in its separator row, and Prettier pads those
+-- to the widest cell, markup and link URLs included: a column of lesson
+-- numbers next to a column of links ended up 2% wide. Resetting the widths
+-- lets Typst size each column to its content and makes Word autofit.
+-- A column without a colon in the separator comes through as `auto`, which
+-- Typst resolves against the `align(center)` pandoc wraps every table in, so
+-- it becomes left-aligned here; an explicit `:---:` or `---:` is kept.
+local function table_layout(el)
+  local is_typst = FORMAT:match("typst")
+  if not (is_typst or FORMAT:match("docx")) then return nil end
+  for i, spec in ipairs(el.colspecs) do
+    local align = spec[1]
+    if is_typst and align == "AlignDefault" then align = "AlignLeft" end
+    el.colspecs[i] = { align, pandoc.ColWidthDefault }
+  end
+  return el
+end
+
 -- Overwrite the label fallbacks from the document's `labels:` metadata.
 local function capture_labels(meta)
   if meta.labels then
@@ -199,5 +218,5 @@ end
 return {
   { Meta = capture_labels },
   { Blocks = keep_with_next },
-  { Div = div },
+  { Div = div, Table = table_layout },
 }

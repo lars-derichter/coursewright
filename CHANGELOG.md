@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Tables in PDF and DOCX exports size their columns to their content. A pipe
+  table with a row longer than 72 characters took its column widths from the
+  dashes in its separator row, which Prettier pads to the widest cell, markup
+  and link URLs included: a column of numbers beside a column of links came out
+  2% wide, and inline code ran out of its cell. `filter.lua` now resets the
+  widths, so Typst sizes the columns and Word autofits the table.
+
+- A table column without explicit alignment is left-aligned in the PDF. It
+  inherited the centring of the block pandoc wraps every table in; an explicit
+  `:---:` or `---:` still wins.
+
 ## 1.5.0 (2026-09-18)
 
 - A heading whose text opens with inline code, `` ## `void` `` for instance,

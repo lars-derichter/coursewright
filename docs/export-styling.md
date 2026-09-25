@@ -210,6 +210,20 @@ typst compile export-styles/generic/logo.typ export-styles/generic/logo.png --pp
 The source sets `fill: none` and an auto-sized page, so the PNG comes out
 transparent and cropped to the wordmark.
 
+## Tables
+
+`filter.lua` lays out every table the same way in both styles, PDF and DOCX:
+
+- **Columns take the width their content needs.** Pandoc would otherwise read
+  the widths off the dashes in the separator row as soon as a row is longer than
+  72 characters, and Prettier pads those dashes to the widest cell, markup and
+  link URLs included, so a column of short numbers beside a column of links came
+  out a few millimetres wide. Typst sizes the columns itself; Word autofits.
+- **A column is left-aligned unless the markdown says otherwise.** Pandoc puts
+  every table in a centred block, and a column without a colon in its separator
+  inherited that centring in the PDF. An explicit `:---:` (centre) or `---:`
+  (right) is kept.
+
 ## Page Breaks in the PDF
 
 Both shipped templates decide where a page may break with three rules:
