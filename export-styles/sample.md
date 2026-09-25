@@ -122,6 +122,16 @@ An ordered list:
 | 1        | 2        | 3        |
 | a        | b        | c        |
 
+A wider table, the kind a reference page carries: inline code, a link, a long
+description that has to wrap, and a right-aligned column set with `---:`.
+Columns size to their content, and a column without a colon is left-aligned:
+
+| Method                                                                                                   | What it does                                                                                   | Example              | Lesson |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------- | -----: |
+| `.equals(other)`                                                                                         | Compares two strings and returns `true` when they hold the same characters, in the same order. | `name.equals("Ann")` |      1 |
+| `.length()`                                                                                              | Returns the number of characters.                                                              | `name.length()`      |      1 |
+| [`.trim()`](<https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html#trim()>) | Returns the same text without spaces at the start and the end.                                 | `input.trim()`       |     12 |
+
 ## Special Blocks
 
 ::: {.link-card title="External resource" url="https://example.com/article"}
