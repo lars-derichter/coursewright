@@ -17,8 +17,17 @@ process.env.CANVAS_API_TOKEN = 'test-token-123';
 const { applyPlan } = require('../../lib/sync/apply');
 const { parseFrontmatter } = require('../../lib/convert/frontmatter');
 const { plan } = require('../../lib/sync/plan');
-const { gatherCanvas, gatherLocal } = require('../../lib/sync/gather');
-const { hashLocalFile } = require('../../lib/sync/fingerprint');
+const {
+  gatherCanvas,
+  gatherLocal,
+  localFileHash,
+} = require('../../lib/sync/gather');
+const {
+  canvasFingerprint,
+  hashLocalFile,
+  legacyFileFingerprint,
+} = require('../../lib/sync/fingerprint');
+const { buildReport } = require('../../cli/report');
 
 const COURSE_ID = 4242;
 const CLEAN = { available: true, paths: new Set(), reason: null };
@@ -763,6 +772,391 @@ describe('the fingerprint invariant, a file item and its binary', () => {
 
     assert.deepEqual(again.actions, [], 'a sync after a pull must do nothing');
     assert.deepEqual(again.skipped, []);
+  });
+
+  it('is silent after Canvas locks the file with its module, and not after a replacement', async () => {
+    silence();
+    // Measured on a Canvas sandbox: unpublishing a module locks every file in
+    // it and moves each file's `updated_at`, publishing it again unlocks them
+    // and moves it once more, and `modified_at` stays where the upload left
+    // it. With `updated_at` in the fingerprint, one publish click made every
+    // file item in the module read as changed on Canvas, and the next pull or
+    // sync downloaded each binary again. Push records the upload response, so
+    // this is the whole round trip: the row it writes has to agree with the
+    // locked file the next gather reads.
+    const courseDir = tempCourse({
+      '01-intro/_category_.json': '{ "label": "Intro", "position": 1 }\n',
+      '01-intro/01-syllabus.md':
+        '---\ntitle: Syllabus\ncanvas_type: file\nfile_ref: _files/handbook.pdf\n---\n',
+      '01-intro/_files/handbook.pdf': 'this year’s handbook',
+    });
+    const state = emptyState();
+
+    const uploaded = {
+      id: 770,
+      display_name: 'handbook.pdf',
+      size: 22,
+      locked: false,
+      modified_at: '2026-10-01T09:00:00Z',
+      updated_at: '2026-10-01T09:00:00Z',
+    };
+    const item = {
+      id: 91,
+      type: 'File',
+      title: 'Syllabus',
+      content_id: 770,
+      position: 1,
+      indent: 0,
+    };
+    const canvasReads = (file) => [
+      { method: 'GET', path: '/modules/10/items', body: [item] },
+      {
+        method: 'GET',
+        path: '/modules',
+        body: [{ id: 10, name: 'Intro', position: 1 }],
+      },
+      { method: 'GET', path: '/api/v1/files/770', body: file },
+    ];
+    const planAgainst = async (file) => {
+      mock.restoreAll();
+      mockCanvas(canvasReads(file));
+      return plan({
+        base: state,
+        local: gatherLocal({ courseDir, gitDirty: CLEAN }),
+        canvas: await gatherCanvas({ courseId: COURSE_ID, base: state }),
+      });
+    };
+
+    // --- Run one: push the item, which records the upload response ---------
+    mockCanvas([{ method: 'GET', path: '/modules', body: [] }]);
+    const canvas = await gatherCanvas({ courseId: COURSE_ID, base: state });
+    const first = plan({
+      base: state,
+      local: gatherLocal({ courseDir, gitDirty: CLEAN }),
+      canvas,
+    });
+    mock.restoreAll();
+    mockCanvas([
+      { method: 'POST', path: '/modules/10/items', body: item },
+      {
+        method: 'POST',
+        path: '/modules',
+        body: { id: 10, name: 'Intro', position: 1 },
+      },
+      {
+        method: 'POST',
+        path: `/api/v1/courses/${COURSE_ID}/files`,
+        body: {
+          upload_url: 'https://canvas.example.com/upload/binary',
+          upload_params: {},
+        },
+      },
+      { method: 'POST', path: '/upload/binary', body: uploaded },
+    ]);
+    const outcome = await run(first, {
+      courseDir,
+      state,
+      canvasContent: canvas.content,
+    });
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(
+      state.modules['01-intro'].items['01-intro/01-syllabus.md']
+        .canvas_updated_at,
+      '2026-10-01T09:00:00Z',
+      'the row records the clock the fingerprint reads, not updated_at',
+    );
+
+    // --- Run two: the module was unpublished, so Canvas locked the file -----
+    const locked = await planAgainst({
+      ...uploaded,
+      locked: true,
+      updated_at: '2026-10-01T09:05:00Z',
+    });
+    assert.deepEqual(locked.actions, [], 'a publish click is not an edit');
+    assert.deepEqual(locked.skipped, []);
+
+    // --- Run three: published again, unlocked, updated_at moved once more ---
+    const unlocked = await planAgainst({
+      ...uploaded,
+      locked: false,
+      updated_at: '2026-10-01T09:06:00Z',
+    });
+    assert.deepEqual(unlocked.actions, []);
+
+    // --- Run four: someone replaced the file in Canvas, at the same size ----
+    const replaced = await planAgainst({
+      ...uploaded,
+      modified_at: '2026-10-02T09:00:00Z',
+      updated_at: '2026-10-02T09:00:00Z',
+    });
+    assert.deepEqual(
+      replaced.actions.map((action) => action.type),
+      ['update-local-item'],
+      'a replaced file still has to come down',
+    );
+    assert.equal(replaced.actions[0].canvasUpdatedAt, '2026-10-02T09:00:00Z');
+  });
+});
+
+describe('a file item recorded under the 1.5.1 fingerprint', () => {
+  // The 1.5.2 migration bridge, end to end. 1.5.1 hashed a file's
+  // `updated_at` and 1.5.2 hashes its `modified_at`, so every file item's
+  // stored `canvas_hash` stops matching the moment a course updates. Without
+  // the bridge the first run read each one as changed on Canvas: a pull or a
+  // sync downloaded every binary again, a push listed every one as left
+  // alone, and a file item deleted here became a decision nothing could
+  // prune. The row below is what 1.5.1 wrote, for a file Canvas has not
+  // touched since.
+  const WRAPPER = '01-intro/01-syllabus.md';
+  const WRAPPER_TEXT =
+    "---\ntitle: 'Syllabus'\ncanvas_type: file\nfile_ref: _files/handbook.pdf\n---\n";
+  const BINARY = '01-intro/_files/handbook.pdf';
+  const BYTES = 'this year’s handbook';
+  const SYNCED_AT = '2026-09-30T12:00:00.000Z';
+
+  const file = {
+    id: 770,
+    display_name: 'handbook.pdf',
+    size: 22,
+    locked: false,
+    modified_at: '2026-10-01T09:00:00Z',
+    updated_at: '2026-10-01T09:30:00Z',
+  };
+  const item = {
+    id: 91,
+    type: 'File',
+    title: 'Syllabus',
+    content_id: 770,
+    position: 1,
+    indent: 0,
+  };
+
+  const PUSH = {
+    write: { canvas: true, local: false },
+    conflict: 'local',
+    adopt: 'local',
+  };
+  const PULL = {
+    write: { canvas: false, local: true },
+    conflict: 'canvas',
+    adopt: 'canvas',
+  };
+
+  function setup() {
+    const courseDir = tempCourse({
+      '01-intro/_category_.json': '{ "label": "Intro", "position": 1 }\n',
+      [WRAPPER]: WRAPPER_TEXT,
+      [BINARY]: BYTES,
+    });
+    const state = emptyState();
+    state.modules['01-intro'] = {
+      canvas_module_id: 10,
+      name: 'Intro',
+      position: 1,
+      item_order: [WRAPPER],
+      items: {
+        [WRAPPER]: {
+          canvas_type: 'file',
+          canvas_id: 770,
+          module_item_id: 91,
+          title: 'Syllabus',
+          indent: 0,
+          local_hash: localFileHash(path.join(courseDir, WRAPPER), WRAPPER),
+          canvas_hash: legacyFileFingerprint({ item, content: file }),
+          canvas_updated_at: file.updated_at,
+          synced_at: SYNCED_AT,
+        },
+      },
+    };
+    return { courseDir, state };
+  }
+
+  function canvasReads(fileObject = file) {
+    return [
+      { method: 'GET', path: '/modules/10/items', body: [item] },
+      {
+        method: 'GET',
+        path: '/modules',
+        body: [{ id: 10, name: 'Intro', position: 1 }],
+      },
+      { method: 'GET', path: '/api/v1/files/770', body: fileObject },
+    ];
+  }
+
+  async function planAgainst({ courseDir, state }, policy, fileObject = file) {
+    mock.restoreAll();
+    mockCanvas(canvasReads(fileObject));
+    const canvas = await gatherCanvas({ courseId: COURSE_ID, base: state });
+    const planned = plan({
+      base: state,
+      local: gatherLocal({ courseDir, gitDirty: CLEAN }),
+      canvas,
+      policy,
+    });
+    return { planned, canvas };
+  }
+
+  const rowOf = (state) => state.modules['01-intro'].items[WRAPPER];
+
+  for (const [name, policy] of [
+    ['sync', {}],
+    ['push', PUSH],
+    ['pull', PULL],
+  ]) {
+    it(`${name}: records the new fingerprint and touches nothing else`, async () => {
+      silence();
+      const course = setup();
+      const { courseDir, state } = course;
+
+      const { planned, canvas } = await planAgainst(course, policy);
+      assert.deepEqual(
+        planned.actions.map((action) => action.type),
+        ['refresh-base-hash'],
+      );
+      assert.deepEqual(planned.withheld, []);
+      assert.deepEqual(planned.decisions, []);
+
+      // No route at all: a request of any kind fails the action.
+      mock.restoreAll();
+      const calls = mockCanvas([]);
+      const outcome = await run(planned, {
+        courseDir,
+        state,
+        gitDirty: CLEAN,
+        canvasContent: canvas.content,
+      });
+      assert.deepEqual(outcome.errors, []);
+      assert.deepEqual(calls, [], 'nothing may reach Canvas');
+      assert.deepEqual(
+        buildReport(planned, { applied: outcome.applied }),
+        [],
+        'the report must read as a run with nothing to do',
+      );
+
+      const row = rowOf(state);
+      assert.equal(
+        row.canvas_hash,
+        canvasFingerprint({ item, content: file }, 'file'),
+      );
+      assert.equal(row.canvas_updated_at, '2026-10-01T09:00:00Z');
+      assert.equal(row.synced_at, SYNCED_AT, 'nothing synced, so no stamp');
+      assert.equal(
+        fs.readFileSync(path.join(courseDir, WRAPPER), 'utf8'),
+        WRAPPER_TEXT,
+      );
+      assert.equal(
+        fs.readFileSync(path.join(courseDir, BINARY), 'utf8'),
+        BYTES,
+      );
+
+      // The next run has nothing left to bridge.
+      const again = await planAgainst(course, policy);
+      assert.deepEqual(again.planned.actions, []);
+
+      // And the fix itself: Canvas locks the file with its module.
+      const locked = await planAgainst(course, policy, {
+        ...file,
+        locked: true,
+        updated_at: '2026-10-01T10:00:00Z',
+      });
+      assert.deepEqual(locked.planned.actions, []);
+      assert.deepEqual(locked.planned.withheld, []);
+    });
+  }
+
+  it('pushes a binary replaced here as an ordinary update, and keeps the upload’s record', async () => {
+    silence();
+    const course = setup();
+    const { courseDir, state } = course;
+    fs.writeFileSync(
+      path.join(courseDir, BINARY),
+      'next year’s handbook',
+      'utf8',
+    );
+
+    const { planned, canvas } = await planAgainst(course, { conflict: 'ask' });
+    assert.deepEqual(
+      planned.actions.map((action) => action.type),
+      ['update-canvas-item', 'refresh-base-hash'],
+    );
+    assert.deepEqual(planned.pending.conflicts, []);
+    assert.deepEqual(planned.conflicts, []);
+
+    const uploaded = {
+      ...file,
+      size: 23,
+      modified_at: '2026-10-02T09:00:00Z',
+      updated_at: '2026-10-02T09:00:00Z',
+    };
+    mock.restoreAll();
+    mockCanvas([
+      {
+        method: 'POST',
+        path: `/api/v1/courses/${COURSE_ID}/files`,
+        body: {
+          upload_url: 'https://canvas.example.com/upload/binary',
+          upload_params: {},
+        },
+      },
+      { method: 'POST', path: '/upload/binary', body: uploaded },
+    ]);
+    const outcome = await run(planned, {
+      courseDir,
+      state,
+      gitDirty: CLEAN,
+      canvasContent: canvas.content,
+    });
+    assert.deepEqual(outcome.errors, []);
+
+    // The refresh ran after the upload and found the row already rewritten,
+    // so the row describes the file Canvas holds now, not the one it read.
+    const row = rowOf(state);
+    assert.equal(
+      row.canvas_hash,
+      canvasFingerprint({ item, content: uploaded }, 'file'),
+    );
+    assert.equal(row.canvas_updated_at, '2026-10-02T09:00:00Z');
+
+    const again = await planAgainst(course, {}, uploaded);
+    assert.deepEqual(again.planned.actions, []);
+  });
+
+  it('makes a file item deleted here a prunable orphan, and prunes it', async () => {
+    silence();
+    const course = setup();
+    const { courseDir, state } = course;
+    fs.rmSync(path.join(courseDir, WRAPPER));
+
+    // Without the flag: an orphan like any other, and the row is brought up
+    // to date so a later publish click cannot turn it into a decision.
+    const kept = await planAgainst(course, PUSH);
+    assert.deepEqual(kept.planned.decisions, []);
+    assert.equal(kept.planned.orphans.canvas.length, 1);
+    assert.deepEqual(
+      kept.planned.actions.map((action) => action.type),
+      ['refresh-base-hash'],
+    );
+
+    // With it: deleted, and no refresh planned for the row it removes.
+    const pruned = await planAgainst(course, { ...PUSH, pruneCanvas: true });
+    assert.deepEqual(pruned.planned.decisions, []);
+    assert.deepEqual(
+      pruned.planned.actions.map((action) => action.type),
+      ['delete-canvas-item'],
+    );
+    mock.restoreAll();
+    const calls = mockCanvas([
+      { method: 'DELETE', path: '/api/v1/files/770', body: {} },
+    ]);
+    const outcome = await run(pruned.planned, {
+      courseDir,
+      state,
+      gitDirty: CLEAN,
+      canvasContent: pruned.canvas.content,
+    });
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(calls.length, 1);
+    assert.equal(rowOf(state), undefined);
   });
 });
 

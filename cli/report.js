@@ -63,10 +63,25 @@ const VERB_LABELS = {
   drop: 'dropped',
 };
 
+/**
+ * The action types no section of the report counts, because none of them is a
+ * change the author could see or would have to act on.
+ *
+ * `refresh-base-hash` is the 1.5.2 migration bridge: it re-records a file
+ * item's fingerprint under a new formula after an update, on a run where
+ * nothing on either side moved. Counted, the first run after updating would
+ * open with "Sync state: 40 hashes refreshed" in every course with file items,
+ * and `status` would list the same under "Left alone" as though there were
+ * something to sync. The other base-side actions stay counted: a re-key or a
+ * dropped row is a consequence of something the author did.
+ */
+const UNREPORTED_ACTIONS = new Set(['refresh-base-hash']);
+
 /** "Canvas: 2 items created, 1 module reordered", one line per side. */
 function summariseActions(actions) {
   const counts = new Map();
   for (const action of actions) {
+    if (UNREPORTED_ACTIONS.has(action.type)) continue;
     const { verb, side, object } = classifyAction(action.type);
     const key = `${side}|${verb}|${object}`;
     counts.set(key, (counts.get(key) || 0) + 1);

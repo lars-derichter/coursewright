@@ -326,6 +326,7 @@ describe('a title change that the content did not cause', () => {
                 id: OLD_FILE_ID,
                 display_name: 'handbook.pdf',
                 size: 9,
+                modified_at: '2026-08-19T09:00:00.000Z',
                 updated_at: '2026-08-19T09:00:00.000Z',
               },
             },
@@ -359,7 +360,7 @@ describe('a title change that the content did not cause', () => {
     silence();
     // The half a skipped upload is easiest to get wrong. `recordCanvasWrite`
     // rebuilds `canvas_hash` from the module item *and* the object behind it,
-    // and a `file`'s half of that is `display_name`, `size` and `updated_at`.
+    // and a `file`'s half of that is `display_name`, `size` and `modified_at`.
     // Record it with no content object and all three read as null, which no
     // gather ever produces — the item would read as changed on Canvas on the
     // very next run and pull the remote copy over the author's file.
@@ -369,6 +370,7 @@ describe('a title change that the content did not cause', () => {
       id: OLD_FILE_ID,
       display_name: 'handbook.pdf',
       size: 9,
+      modified_at: '2026-08-19T09:00:00.000Z',
       updated_at: '2026-08-19T09:00:00.000Z',
     };
     const item = { id: MODULE_ITEM_ID, title: 'Course Syllabus', indent: 0 };

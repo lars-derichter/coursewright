@@ -4123,3 +4123,212 @@ describe('plan: embedded binaries nothing points at any more', () => {
     assert.equal(result.withheld[0].reason, 'write-policy');
   });
 });
+
+describe('plan: a file item recorded under the 1.5.1 fingerprint', () => {
+  // The 1.5.2 migration bridge. 1.5.1 hashed a file's `updated_at`, 1.5.2
+  // hashes its `modified_at`, so every stored file `canvas_hash` differs from
+  // the live one after the update. `gatherCanvas` hands over what 1.5.1 would
+  // have recorded as `legacyCanvasHash`, and a row that still matches it is
+  // unchanged on Canvas. Here `legacy` is that hash and `C:new` the live one.
+  const FILE = '01-intro/01-handbook.md';
+  const RENAMED_FILE = '01-intro/01-guide.md';
+
+  function legacy({
+    local = true,
+    localPath = FILE,
+    localFields = {},
+    canvasFields = {},
+    rowFields = {},
+  } = {}) {
+    return {
+      base: {
+        modules: {
+          [FOLDER]: bMod([FILE], {
+            rows: {
+              [FILE]: {
+                canvas_type: 'file',
+                page_url: null,
+                canvas_hash: 'legacy',
+                ...rowFields,
+              },
+            },
+          }),
+        },
+      },
+      local: {
+        modules: [
+          lMod(FOLDER, local ? [localPath] : [], {
+            items: { [localPath]: { canvasType: 'file', ...localFields } },
+          }),
+        ],
+      },
+      canvas: {
+        modules: [
+          cMod([FILE], {
+            items: {
+              [FILE]: {
+                canvasType: 'file',
+                rawType: 'File',
+                pageUrl: null,
+                canvasHash: 'C:new',
+                legacyCanvasHash: 'legacy',
+                ...canvasFields,
+              },
+            },
+          }),
+        ],
+      },
+    };
+  }
+
+  const PUSH = { write: { canvas: true, local: false }, conflict: 'local' };
+  const PULL = { write: { canvas: false, local: true }, conflict: 'canvas' };
+  const STATUS = { write: { canvas: false, local: false } };
+
+  it('reads as unchanged on Canvas, and records the new hash and nothing else', () => {
+    const result = plan({ ...legacy(), policy: {} });
+
+    assert.deepEqual(types(result), ['refresh-base-hash']);
+    assert.deepEqual(only(result, 'refresh-base-hash'), {
+      type: 'refresh-base-hash',
+      folder: FOLDER,
+      itemPath: FILE,
+      legacyHash: 'legacy',
+      canvasHash: 'C:new',
+      canvasUpdatedAt: CANVAS_TIME,
+    });
+    assert.deepEqual(result.withheld, []);
+    assert.deepEqual(result.conflicts, []);
+    assert.deepEqual(result.decisions, []);
+    assert.deepEqual(result.skipped, []);
+  });
+
+  it('records it under push and pull as well, and under status not at all', () => {
+    // Bookkeeping, not a write to either side: the policy that pins a
+    // direction must not withhold it, or a course that only ever pushes keeps
+    // its 1.5.1 rows until the next publish click turns them into changes.
+    for (const policy of [PUSH, PULL]) {
+      const result = plan({ ...legacy(), policy });
+      assert.deepEqual(types(result), ['refresh-base-hash']);
+      assert.deepEqual(result.withheld, []);
+    }
+
+    const status = plan({ ...legacy(), policy: STATUS });
+    assert.deepEqual(types(status), []);
+    assert.deepEqual(
+      status.withheld.map((action) => action.type),
+      ['refresh-base-hash'],
+    );
+  });
+
+  it('pushes a local change as an ordinary update, with no conflict', () => {
+    const result = plan({
+      ...legacy({ localFields: { localHash: 'edited' } }),
+      policy: { conflict: 'ask' },
+    });
+
+    assert.deepEqual(types(result), [
+      'update-canvas-item',
+      'refresh-base-hash',
+    ]);
+    assert.equal(
+      only(result, 'update-canvas-item').contentUnchanged,
+      undefined,
+    );
+    assert.deepEqual(result.pending.conflicts, []);
+    assert.deepEqual(result.conflicts, []);
+  });
+
+  it('plans the title-only update beside it when only the title moved', () => {
+    const result = plan({
+      ...legacy({ localFields: { title: 'Course handbook' } }),
+      policy: {},
+    });
+
+    assert.deepEqual(types(result), [
+      'update-canvas-item',
+      'refresh-base-hash',
+    ]);
+    assert.equal(only(result, 'update-canvas-item').contentUnchanged, true);
+  });
+
+  it('carries the refresh to the path a rename re-keyed the row to', () => {
+    const result = plan({
+      ...legacy({
+        localPath: RENAMED_FILE,
+        localFields: { localHash: `L:${FILE}`, title: titleOf(FILE) },
+      }),
+      policy: {},
+    });
+
+    assert.deepEqual(types(result), ['rekey-base', 'refresh-base-hash']);
+    assert.equal(only(result, 'refresh-base-hash').itemPath, RENAMED_FILE);
+  });
+
+  it('makes a file item deleted here an ordinary orphan, not a decision', () => {
+    const result = plan({ ...legacy({ local: false }), policy: PUSH });
+
+    assert.deepEqual(result.decisions, []);
+    assert.equal(result.orphans.canvas.length, 1);
+    assert.equal(result.orphans.canvas[0].itemPath, FILE);
+    assert.equal(result.orphans.canvas[0].pruned, false);
+    // The row stays, so it is brought up to date.
+    assert.deepEqual(types(result), ['refresh-base-hash']);
+  });
+
+  it('prunes that orphan under --prune-canvas, and refreshes no row it deletes', () => {
+    const result = plan({
+      ...legacy({ local: false }),
+      policy: { ...PUSH, pruneCanvas: true },
+    });
+
+    assert.deepEqual(result.decisions, []);
+    assert.equal(result.orphans.canvas[0].pruned, true);
+    assert.deepEqual(types(result), ['delete-canvas-item']);
+  });
+
+  it('reads a row the old formula no longer matches as changed, as before', () => {
+    // A file Canvas locked or unlocked since 1.5.1 recorded the row: its
+    // `updated_at` moved, so the bridge cannot vouch for it. That is the
+    // defect being fixed, met one last time, not a hazard of the update.
+    const result = plan({
+      ...legacy({ canvasFields: { legacyCanvasHash: 'legacy-but-locked' } }),
+      policy: {},
+    });
+
+    assert.deepEqual(types(result), ['update-local-item']);
+  });
+
+  it('leaves a row recorded on 1.5.2 to the ordinary comparison', () => {
+    const unchanged = plan({
+      ...legacy({ rowFields: { canvas_hash: 'C:new' } }),
+      policy: {},
+    });
+    assert.deepEqual(types(unchanged), []);
+
+    const changed = plan({
+      ...legacy({ rowFields: { canvas_hash: 'C:older' } }),
+      policy: {},
+    });
+    assert.deepEqual(types(changed), ['update-local-item']);
+  });
+
+  it('applies to a file row and nothing else', () => {
+    // `gatherCanvas` gives no other type a legacy hash; this is the planner
+    // refusing to take one on trust if a caller ever did.
+    const result = plan({
+      ...legacy({
+        rowFields: { canvas_type: 'page', page_url: 'page-1-1' },
+        localFields: { canvasType: 'page' },
+        canvasFields: {
+          canvasType: 'page',
+          rawType: 'Page',
+          pageUrl: 'page-1-1',
+        },
+      }),
+      policy: {},
+    });
+
+    assert.deepEqual(types(result), ['update-local-item']);
+  });
+});

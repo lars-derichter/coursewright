@@ -1401,6 +1401,37 @@ describe('the sync report', () => {
     assert.match(lines[2], /Canvas: 1 item created/);
   });
 
+  it('never counts the 1.5.2 fingerprint refresh, in any section', () => {
+    // The migration bridge re-records a file item's `canvas_hash` on the
+    // first run after updating, in a course where nothing moved. Counted, it
+    // would open that run with "Sync state: 12 hashes refreshed" and have
+    // `status` list the same under "Left alone".
+    const refresh = {
+      type: 'refresh-base-hash',
+      folder: '01-intro',
+      itemPath: '01-intro/01-syllabus.md',
+    };
+    const plan = planOf([refresh]);
+
+    assert.deepEqual(buildReport(plan), [], 'a preview');
+    assert.deepEqual(buildReport(plan, { applied: [refresh] }), [], 'a run');
+    assert.deepEqual(
+      buildReport(planOf([], { withheld: [refresh] })),
+      [],
+      'status',
+    );
+
+    // The other base-side actions are still the author's to see.
+    const rekey = { type: 'rekey-base', from: 'a/b.md', to: 'a/c.md' };
+    const lines = buildReport(planOf([rekey, refresh]), {
+      applied: [rekey, refresh],
+    });
+    assert.deepEqual(lines.slice(1), [
+      'Applied',
+      '  Sync state: 1 row re-keyed',
+    ]);
+  });
+
   it('renders no Applied section when every action failed', () => {
     const plan = planOf([{ type: 'create-canvas-item', itemPath: 'a/b.md' }]);
     assert.deepEqual(buildReport(plan, { applied: [] }), []);

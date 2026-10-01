@@ -8,9 +8,11 @@ const {
   CANVAS_FINGERPRINT_FIELDS,
   canvasFingerprint,
   canvasPayload,
+  canvasTimestamp,
   hashBinaryFile,
   hashLocalFile,
   hashText,
+  legacyFileFingerprint,
   needsContentFetch,
 } = require('../../lib/sync/fingerprint');
 
@@ -49,7 +51,7 @@ const EXPECTED_FIELDS = {
   sub_header: ['indent', 'title'],
   external_url: ['external_url', 'indent', 'new_tab', 'title'],
   external_tool: ['external_url', 'indent', 'new_tab', 'title'],
-  file: ['content_title', 'indent', 'size', 'title', 'updated_at'],
+  file: ['content_title', 'indent', 'modified_at', 'size', 'title'],
 };
 
 const TYPES = Object.keys(EXPECTED_FIELDS);
@@ -98,6 +100,8 @@ function sources(overrides = {}) {
     discussion_type: 'threaded',
     require_initial_post: false,
     updated_at: '2026-01-05T10:00:00Z',
+    modified_at: '2026-01-04T10:00:00Z',
+    locked: false,
     size: 4096,
     ...overrides.content,
   };
@@ -122,7 +126,7 @@ const CHANGED_VALUES = {
   require_initial_post: true,
   external_url: 'https://example.org/other',
   new_tab: false,
-  updated_at: '2026-01-06T10:00:00Z',
+  modified_at: '2026-01-04T11:00:00Z',
   size: 8192,
 };
 
@@ -647,31 +651,188 @@ describe('canvasFingerprint on reference types', () => {
 });
 
 describe('canvasFingerprint on a file', () => {
-  it('takes updated_at and size from the file object', () => {
-    const item = { title: 'Slides', indent: 0 };
-    const base = {
-      item,
-      content: {
-        display_name: 'slides.pdf',
-        updated_at: '2026-01-05T10:00:00Z',
-        size: 10,
-      },
-    };
+  const item = { title: 'Slides', indent: 0 };
+  /** What the upload response and every later `GET /files/:id` agree on. */
+  const uploaded = {
+    display_name: 'slides.pdf',
+    size: 10,
+    modified_at: '2026-10-01T09:00:00Z',
+    updated_at: '2026-10-01T09:00:00Z',
+    locked: false,
+  };
 
-    assert.deepEqual(canvasPayload(base, 'file'), {
+  it('takes modified_at and size from the file object', () => {
+    assert.deepEqual(canvasPayload({ item, content: uploaded }, 'file'), {
       title: 'Slides',
       indent: 0,
       content_title: 'slides.pdf',
-      updated_at: '2026-01-05T10:00:00.000Z',
+      modified_at: '2026-10-01T09:00:00.000Z',
       size: 10,
     });
     assert.notEqual(
-      canvasFingerprint(
-        { item, content: { ...base.content, size: 11 } },
+      canvasFingerprint({ item, content: { ...uploaded, size: 11 } }, 'file'),
+      canvasFingerprint({ item, content: uploaded }, 'file'),
+    );
+  });
+
+  it('does not move when Canvas locks and unlocks the file with its module', () => {
+    // Measured on a Canvas sandbox: unpublishing the module locks the file and
+    // moves its `updated_at`, publishing it again unlocks it and moves it once
+    // more, and `modified_at` stays where the upload left it. With
+    // `updated_at` in the hash, one publish click made every file item in the
+    // module read as changed on Canvas, and the next pull downloaded each
+    // binary again.
+    const recorded = canvasFingerprint({ item, content: uploaded }, 'file');
+    const locked = {
+      ...uploaded,
+      locked: true,
+      updated_at: '2026-10-01T09:05:00Z',
+    };
+    const unlocked = {
+      ...uploaded,
+      locked: false,
+      updated_at: '2026-10-01T09:06:00Z',
+    };
+
+    assert.equal(
+      canvasFingerprint({ item, content: locked }, 'file'),
+      recorded,
+    );
+    assert.equal(
+      canvasFingerprint({ item, content: unlocked }, 'file'),
+      recorded,
+    );
+  });
+
+  it('moves when the file is replaced, even by one of the same size', () => {
+    // A same-name upload with `on_duplicate=overwrite` keeps the file id and
+    // moves `modified_at`. Size alone would miss this year's PDF whenever it
+    // happened to weigh exactly what last year's did.
+    const replaced = {
+      ...uploaded,
+      modified_at: '2026-10-02T09:00:00Z',
+      updated_at: '2026-10-02T09:00:00Z',
+    };
+    assert.notEqual(
+      canvasFingerprint({ item, content: replaced }, 'file'),
+      canvasFingerprint({ item, content: uploaded }, 'file'),
+    );
+  });
+});
+
+describe('legacyFileFingerprint, the 1.5.2 migration bridge', () => {
+  const item = { title: 'Slides', indent: 0 };
+  const file = {
+    display_name: 'slides.pdf',
+    size: 10,
+    modified_at: '2026-10-01T09:00:00Z',
+    updated_at: '2026-10-01T09:00:00Z',
+    locked: false,
+  };
+
+  it('reproduces the hash 1.5.1 recorded for a file item, exactly', () => {
+    // The whole bridge rests on this: a row written by 1.5.1 has to match it
+    // byte for byte, or every file item reads as changed on Canvas after the
+    // update. The canonical JSON is the 1.5.1 payload written out, and the hex
+    // is what 1.5.1's own `canvasFingerprint(sources, 'file')` returned for
+    // these sources, computed against that release's code.
+    const hash = legacyFileFingerprint({ item, content: file });
+    assert.equal(
+      hash,
+      hashText(
+        '{"content_title":"slides.pdf","indent":0,"size":10,"title":"Slides",' +
+          '"updated_at":"2026-10-01T09:00:00.000Z"}',
+      ),
+    );
+    assert.equal(
+      hash,
+      'eef497e9f210e7747c9f47ed7f729e2ea04bd3b7b54e454a394aa0968a49749c',
+    );
+  });
+
+  it('normalises the way 1.5.1 did', () => {
+    // A string indent read as a number, a missing name and size read as null,
+    // and a date that will not parse kept verbatim: each of these is a row
+    // 1.5.1 may have written, and a different spelling here would miss it.
+    const hash = legacyFileFingerprint({
+      item: { title: 'Slides', indent: '2' },
+      content: { updated_at: 'not a date' },
+    });
+    assert.equal(
+      hash,
+      '4f9e97a8e8d286acd7e09d5f81d1a79f0e0250d6982a4fab0b937306c4dcdc44',
+    );
+  });
+
+  it('moves with updated_at, which is why it was retired', () => {
+    assert.notEqual(
+      legacyFileFingerprint({
+        item,
+        content: { ...file, locked: true, updated_at: '2026-10-01T09:05:00Z' },
+      }),
+      legacyFileFingerprint({ item, content: file }),
+    );
+  });
+
+  it('never equals the fingerprint that replaced it', () => {
+    assert.notEqual(
+      legacyFileFingerprint({ item, content: file }),
+      canvasFingerprint({ item, content: file }, 'file'),
+    );
+  });
+});
+
+describe('canvasTimestamp', () => {
+  it('times a file by modified_at, not by the updated_at a lock moves', () => {
+    // The `newest` tiebreak reads this. A publish click after a real conflict
+    // began must not make Canvas look newer than the binary it holds.
+    assert.equal(
+      canvasTimestamp(
+        {
+          modified_at: '2026-10-01T09:00:00Z',
+          updated_at: '2026-10-01T09:05:00Z',
+        },
         'file',
       ),
-      canvasFingerprint(base, 'file'),
+      '2026-10-01T09:00:00Z',
     );
+  });
+
+  it('falls back to updated_at for a file Canvas gave no modified_at', () => {
+    assert.equal(
+      canvasTimestamp({ updated_at: '2026-10-01T09:05:00Z' }, 'file'),
+      '2026-10-01T09:05:00Z',
+    );
+    assert.equal(
+      canvasTimestamp(
+        { modified_at: null, updated_at: '2026-10-01T09:05:00Z' },
+        'file',
+      ),
+      '2026-10-01T09:05:00Z',
+    );
+  });
+
+  it('times every other type by updated_at', () => {
+    // A page has to keep it: the pre-filter in `gatherCanvas` compares the
+    // stored value against the page list's `updated_at`.
+    const content = {
+      modified_at: '2026-10-01T09:00:00Z',
+      updated_at: '2026-10-01T09:05:00Z',
+    };
+    for (const canvasType of ['page', 'assignment', 'discussion']) {
+      assert.equal(
+        canvasTimestamp(content, canvasType),
+        '2026-10-01T09:05:00Z',
+        canvasType,
+      );
+    }
+  });
+
+  it('answers null when there is no object, or no timestamp on it', () => {
+    assert.equal(canvasTimestamp(null, 'file'), null);
+    assert.equal(canvasTimestamp(undefined, 'page'), null);
+    assert.equal(canvasTimestamp({}, 'file'), null);
+    assert.equal(canvasTimestamp({}, 'assignment'), null);
   });
 });
 

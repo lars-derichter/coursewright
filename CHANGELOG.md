@@ -12,6 +12,24 @@
   `course/_files/` folder is still repointed at the module-local copy, as
   before.
 
+- Publishing or unpublishing a module in Canvas no longer makes the file items
+  in it read as changed on Canvas. Canvas locks a file when its module is
+  unpublished and unlocks it on publish, and each lock moves the file's
+  `updated_at`, which a file item's fingerprint hashed. So after one publish
+  click the next pull or sync downloaded every binary in the module again and,
+  before the entry above, rewrote its wrapper as well. A file item is now
+  fingerprinted by the file's `modified_at`, which moves only when the file's
+  content is replaced, and the `newest` conflict tiebreak reads the same
+  timestamp, so a publish click no longer makes Canvas look newer than a binary
+  replaced here.
+
+  The first pull, push or sync after updating re-records the fingerprint of
+  every file item in `.canvas-sync.json` and touches nothing else, so expect a
+  diff in that file worth committing. A file item whose module was published or
+  unpublished since the last sync reads as changed on Canvas that one time, as
+  it would have without the update: the publish moved the `updated_at` the old
+  fingerprint was taken from.
+
 ## 1.5.1 (2026-09-25)
 
 - Tables in PDF and DOCX exports size their columns to their content. A pipe

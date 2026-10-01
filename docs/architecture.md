@@ -144,7 +144,10 @@ Key properties:
   `status` never write it, and a run that stopped before the end leaves the
   value the last completed one left. Nothing reads it, and no decision depends
   on it. The only timestamps a decision reads are the file's mtime and Canvas's
-  `updated_at`, and only to break a tie when both sides of an item changed.
+  `updated_at`, and only to break a tie when both sides of an item changed. For
+  a file item, Canvas's side is the Canvas file's `modified_at` instead, because
+  Canvas moves a file's `updated_at` whenever publishing or unpublishing its
+  module locks or unlocks it.
 - **schema_version**: the loader reads version 4 only. A file carrying any other
   version is refused with an error rather than guessed at, because misreading
   the mapping would create duplicates on Canvas; rebuild with
@@ -310,9 +313,9 @@ two timestamps to compare only for an item of an authored type where both hashes
 moved. A module name renamed on both sides, a reference, and a text header reach
 the same policy with nothing to compare, because Canvas keeps no timestamp on
 any of them; each falls to local with a reason naming what is untimed rather
-than blaming Canvas for bad data. A Canvas `updated_at` that is missing or
-unparseable gives it to local, and so does a tie, because of the two possible
-mistakes pushing over a remote edit is the one git can undo.
+than blaming Canvas for bad data. A Canvas `updated_at` (a file's `modified_at`)
+that is missing or unparseable gives it to local, and so does a tie, because of
+the two possible mistakes pushing over a remote edit is the one git can undo.
 
 ### Adoption, Not Duplication
 

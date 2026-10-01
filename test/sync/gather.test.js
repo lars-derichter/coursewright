@@ -17,7 +17,11 @@ const {
   runGit,
   subHeaderHash,
 } = require('../../lib/sync/gather');
-const { hashBinaryFile, hashLocalFile } = require('../../lib/sync/fingerprint');
+const {
+  hashBinaryFile,
+  hashLocalFile,
+  legacyFileFingerprint,
+} = require('../../lib/sync/fingerprint');
 
 const COURSE_ID = 4242;
 
@@ -976,6 +980,95 @@ describe('gatherCanvas', () => {
       '01-intro/01-theory/01-docs.md',
     );
     assert.equal(modules[0].items[2].canvasId, 700);
+  });
+
+  it("times a file item by the file's modified_at, and by updated_at only without one", async () => {
+    // The `newest` tiebreak reads `canvasUpdatedAt`, and for a file it has to
+    // be the clock the fingerprint reads. The first file was locked with its
+    // module after the upload, which moved `updated_at` and nothing else; a
+    // tiebreak reading that would call Canvas newer than it is.
+    silence();
+    mockCanvas([
+      {
+        method: 'GET',
+        path: '/modules/10/items',
+        body: [
+          {
+            id: 91,
+            type: 'File',
+            title: 'Syllabus',
+            content_id: 770,
+            position: 1,
+            indent: 0,
+          },
+          {
+            id: 92,
+            type: 'File',
+            title: 'Handbook',
+            content_id: 771,
+            position: 2,
+            indent: 0,
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/modules',
+        body: [{ id: 10, name: 'Intro', position: 1 }],
+      },
+      {
+        method: 'GET',
+        path: '/api/v1/files/770',
+        body: {
+          id: 770,
+          display_name: 'syllabus.pdf',
+          size: 10,
+          locked: true,
+          modified_at: '2026-10-01T09:00:00Z',
+          updated_at: '2026-10-01T09:05:00Z',
+        },
+      },
+      {
+        method: 'GET',
+        path: '/api/v1/files/771',
+        body: {
+          id: 771,
+          display_name: 'handbook.pdf',
+          size: 20,
+          updated_at: '2026-10-01T09:07:00Z',
+        },
+      },
+    ]);
+
+    const { modules } = await gatherCanvas({ courseId: COURSE_ID, base: null });
+
+    const [syllabus, handbook] = modules[0].items;
+    assert.equal(syllabus.canvasUpdatedAt, '2026-10-01T09:00:00Z');
+    assert.equal(handbook.canvasUpdatedAt, '2026-10-01T09:07:00Z');
+
+    // The 1.5.2 migration bridge rides along: what 1.5.1 would have recorded
+    // for the same file, for the planner to recognise an old row by.
+    assert.equal(
+      syllabus.legacyCanvasHash,
+      legacyFileFingerprint({
+        item: {
+          id: 91,
+          type: 'File',
+          title: 'Syllabus',
+          content_id: 770,
+          position: 1,
+          indent: 0,
+        },
+        content: {
+          id: 770,
+          display_name: 'syllabus.pdf',
+          size: 10,
+          locked: true,
+          modified_at: '2026-10-01T09:00:00Z',
+          updated_at: '2026-10-01T09:05:00Z',
+        },
+      }),
+    );
   });
 
   it('carries a module whose items cannot be listed as unreadable, not as gone', async () => {

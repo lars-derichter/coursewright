@@ -534,7 +534,9 @@ only one side reordered keeps that side's order.
   both sides changed. `newest` compares the file's modification time against
   Canvas's `updated_at`, and gives it to your file on a tie or when Canvas
   reports no usable timestamp: of the two possible mistakes, writing over Canvas
-  is the one git can undo. `ask` stops at each item and asks.
+  is the one git can undo. For a file item it reads the Canvas file's
+  `modified_at` instead, which publishing its module does not move. `ask` stops
+  at each item and asks.
 - **`--order local|canvas|ask`** (default `ask`) settles a module both sides
   reordered. There is no `newest` here, and only `sync` takes the flag. `push`,
   `pull` and `status` leave such a module in whatever order each side has it and
