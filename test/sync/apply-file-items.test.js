@@ -1188,3 +1188,145 @@ describe('a pulled file item onto an uncommitted binary', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// A pulled wrapper that already says what Canvas says
+// ---------------------------------------------------------------------------
+
+/**
+ * What a pull leaves of a wrapper it had nothing to change in.
+ *
+ * `writeLocalFileItem` used to regenerate the wrapper on every pull of the
+ * item, through `serializeFrontmatter` and `writeMarkdown`, and that rewrite
+ * normalised the author's bytes whatever Canvas had to say: a quoted title came
+ * back unquoted and a file with no final newline gained one. The binary is the
+ * half that changed; the wrapper is rewritten only when its title, its type or
+ * the path its `file_ref` resolves to would read differently.
+ *
+ * The first two pin the bytes and the fingerprint together, because a wrapper
+ * left alone with a row hashed from the regenerated text would read as changed
+ * locally on the very next run. The last two are the fences: a new title and a
+ * `file_ref` naming somewhere other than the download still rewrite.
+ */
+
+const QUOTED_WRAPPER =
+  "---\ntitle: 'Syllabus'\ncanvas_type: file\nfile_ref: _files/handbook.pdf\n---\n";
+
+/** Pull the item onto a clean tree, with whatever wrapper the test wrote. */
+async function pullOnto(courseDir, state, { title = 'Syllabus' } = {}) {
+  const content = pullContent();
+  content.get(String(MODULE_ITEM_ID)).item.title = title;
+  mockCanvas(pullRoutes());
+  return run([{ ...pullAction(), title }], {
+    courseDir,
+    state,
+    canvasContent: content,
+    gitDirty: CLEAN,
+  });
+}
+
+/** The `local_hash` the next `gatherLocal` computes for the wrapper. */
+function gatheredHash(courseDir) {
+  const { modules } = gatherLocal({ courseDir, gitDirty: CLEAN });
+  return modules
+    .flatMap((mod) => mod.items)
+    .find((item) => item.itemPath === WRAPPER).localHash;
+}
+
+function wrapperAt(courseDir) {
+  return fs.readFileSync(path.join(courseDir, WRAPPER), 'utf8');
+}
+
+describe('a pulled file item whose wrapper already says what Canvas says', () => {
+  it('leaves a quoted title as written, and records the hash gather computes', async () => {
+    silence();
+    const courseDir = tempCourse();
+    fs.writeFileSync(path.join(courseDir, WRAPPER), QUOTED_WRAPPER, 'utf8');
+    const state = stateWithFileItem();
+
+    const outcome = await pullOnto(courseDir, state);
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(outcome.applied.length, 1);
+    assert.equal(bytesAt(courseDir), CANVAS_BYTES, 'the binary still lands');
+    assert.equal(
+      wrapperAt(courseDir),
+      QUOTED_WRAPPER,
+      'the author’s wrapper must come through byte for byte',
+    );
+    assert.equal(
+      state.modules['01-intro'].items[WRAPPER].local_hash,
+      gatheredHash(courseDir),
+      'the row has to describe the wrapper left on disk and the binary beside it',
+    );
+  });
+
+  it('leaves a wrapper with no final newline byte for byte', async () => {
+    silence();
+    const courseDir = tempCourse();
+    const unterminated =
+      '---\ntitle: Syllabus\ncanvas_type: file\nfile_ref: _files/handbook.pdf\n---';
+    fs.writeFileSync(path.join(courseDir, WRAPPER), unterminated, 'utf8');
+    const state = stateWithFileItem();
+
+    const outcome = await pullOnto(courseDir, state);
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(wrapperAt(courseDir), unterminated);
+    assert.equal(
+      state.modules['01-intro'].items[WRAPPER].local_hash,
+      gatheredHash(courseDir),
+    );
+  });
+
+  it('still rewrites the wrapper when Canvas retitled the item', async () => {
+    silence();
+    const courseDir = tempCourse();
+    fs.writeFileSync(path.join(courseDir, WRAPPER), QUOTED_WRAPPER, 'utf8');
+    const state = stateWithFileItem();
+
+    const outcome = await pullOnto(courseDir, state, {
+      title: 'Course Handbook',
+    });
+
+    assert.deepEqual(outcome.errors, []);
+    const text = wrapperAt(courseDir);
+    assert.match(text, /^title: Course Handbook$/m);
+    assert.doesNotMatch(text, /Syllabus/);
+    assert.match(text, /^file_ref: _files\/handbook\.pdf$/m);
+    assert.equal(
+      state.modules['01-intro'].items[WRAPPER].local_hash,
+      gatheredHash(courseDir),
+    );
+  });
+
+  it('still repoints a file_ref into the shared folder at the module-local copy', async () => {
+    silence();
+    // The repoint `docs/limitations.md` documents. Same title, same type, and a
+    // `file_ref` naming a file of the same name, but in `course/_files/`: the
+    // download lands in the module's own `_files/`, so the wrapper no longer
+    // says where the bytes are and has to be rewritten to say it.
+    const courseDir = tempCourse();
+    const shared = path.join(courseDir, '_files/handbook.pdf');
+    fs.mkdirSync(path.dirname(shared), { recursive: true });
+    fs.writeFileSync(shared, AUTHOR_BYTES, 'utf8');
+    fs.rmSync(path.join(courseDir, BINARY_REF));
+    fs.writeFileSync(
+      path.join(courseDir, WRAPPER),
+      '---\ntitle: Syllabus\ncanvas_type: file\nfile_ref: ../_files/handbook.pdf\n---\n',
+      'utf8',
+    );
+    const state = stateWithFileItem();
+
+    const outcome = await pullOnto(courseDir, state);
+
+    assert.deepEqual(outcome.errors, []);
+    assert.match(wrapperAt(courseDir), /^file_ref: _files\/handbook\.pdf$/m);
+    assert.equal(bytesAt(courseDir), CANVAS_BYTES);
+    assert.equal(
+      fs.readFileSync(shared, 'utf8'),
+      AUTHOR_BYTES,
+      'the shared copy is not the pull’s to touch',
+    );
+  });
+});

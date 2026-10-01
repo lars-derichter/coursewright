@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- A pull no longer rewrites a file item's wrapper that already says what Canvas
+  says. A pull that brought down the binary regenerated the wrapper beside it as
+  well, so one whose title and `file_ref` had not changed still came back
+  normalised: `title: 'Syllabus'` lost its quotes, a file without a final
+  newline gained one, keys were reordered and any body was dropped. The wrapper
+  is now rewritten only when its title, its type or the path its `file_ref`
+  resolves to would read differently. A `file_ref` into the shared
+  `course/_files/` folder is still repointed at the module-local copy, as
+  before.
+
 ## 1.5.1 (2026-09-25)
 
 - Tables in PDF and DOCX exports size their columns to their content. A pipe
