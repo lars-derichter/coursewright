@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.2 (2026-10-01)
 
 - A pull no longer rewrites a file item's wrapper that already says what Canvas
   says. A pull that brought down the binary regenerated the wrapper beside it as
