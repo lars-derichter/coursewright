@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.3 (2026-10-02)
 
 - A pull now downloads a file item's binary onto the path its `file_ref` names
   when that path is inside a `_files/` folder under `course/`, and leaves the

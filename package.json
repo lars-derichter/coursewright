@@ -1,6 +1,6 @@
 {
   "name": "coursewright",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "private": true,
   "description": "Write your course in markdown; publish it as a website, PDF or DOCX handouts, or straight into Canvas LMS",
   "license": "MIT",
