@@ -15,6 +15,17 @@
   still repointed, because the bytes come from Canvas and could otherwise land
   over a page.
 
+- Pushing a file item whose binary you edited keeps its module item. Canvas
+  gives new bytes uploaded under the same name a new file id and repoints the
+  module item at it by itself, but a push read the new id as a renamed binary,
+  deleted the module item and created another at the end of the module. So every
+  edited binary cost its item the id, and with it any `/modules/items/:id` link
+  and completion requirement, and the next `status` or `sync` read the move as
+  Canvas reordering the module and offered to renumber the local files to match.
+  A push now reads the module item after the upload and leaves one Canvas
+  already repointed alone. A renamed binary still gets a new module item, now at
+  the position the old one held.
+
 ## 1.5.2 (2026-10-01)
 
 - A pull no longer rewrites a file item's wrapper that already says what Canvas

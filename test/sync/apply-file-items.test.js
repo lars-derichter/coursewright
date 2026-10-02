@@ -10,7 +10,8 @@ process.env.CANVAS_API_URL = 'https://canvas.example.com';
 process.env.CANVAS_API_TOKEN = 'test-token-123';
 
 const { applyPlan } = require('../../lib/sync/apply');
-const { gatherLocal } = require('../../lib/sync/gather');
+const { gatherCanvas, gatherLocal } = require('../../lib/sync/gather');
+const { plan } = require('../../lib/sync/plan');
 const {
   canvasFingerprint,
   hashLocalFile,
@@ -116,8 +117,11 @@ function updateAction() {
   };
 }
 
-/** The two hops an upload takes: the grant, then the form post it points at. */
-function uploadRoutes(fileId, displayName) {
+/**
+ * The two hops an upload takes: the grant, then the form post it points at.
+ * `extra` adds to the file object the second hop answers with.
+ */
+function uploadRoutes(fileId, displayName, extra = {}) {
   return [
     {
       method: 'POST',
@@ -130,14 +134,40 @@ function uploadRoutes(fileId, displayName) {
     {
       method: 'POST',
       path: '/upload/binary',
-      body: { id: fileId, display_name: displayName, size: 9 },
+      body: { id: fileId, display_name: displayName, size: 9, ...extra },
     },
   ];
 }
 
-/** What a new Canvas file costs the module item, which cannot be repointed. */
+/**
+ * The module item as Canvas answers for it once the upload has landed, which is
+ * what tells a replaced binary from a renamed one: Canvas repoints the item at a
+ * file it replaced, and leaves it on the old file when the upload made a
+ * separate one.
+ */
+function liveItemRoute(contentId, { position = 1 } = {}) {
+  return {
+    method: 'GET',
+    path: `/modules/${MODULE_ID}/items/${MODULE_ITEM_ID}`,
+    body: {
+      id: MODULE_ITEM_ID,
+      type: 'File',
+      title: 'Syllabus',
+      indent: 0,
+      position,
+      content_id: contentId,
+    },
+  };
+}
+
+/**
+ * What a renamed binary costs the module item: the read that finds it still on
+ * the old file, then a delete and a create, because a module item's content id
+ * cannot be changed.
+ */
 function recreateItemRoutes() {
   return [
+    liveItemRoute(OLD_FILE_ID),
     {
       method: 'DELETE',
       path: `/modules/${MODULE_ID}/items/${MODULE_ITEM_ID}`,
@@ -622,11 +652,12 @@ describe('an upload that renamed nothing deletes nothing', () => {
 
   it('is not fooled by a Canvas id that changed under an unchanged name', async () => {
     silence();
-    // The case `1ee4bb1` declined to bet against, and the reason the id
-    // comparison is only half the test: Canvas answers `on_duplicate=overwrite`
-    // by replacing the file of that name, and nothing here has ever verified
-    // which id comes back. If it is a new one, the old file was consumed by the
-    // overwrite and deleting it would be deleting the author's live binary.
+    // The reason the id comparison is only half the test. The author moved
+    // `handbook.pdf` to another Canvas folder by hand, so the upload found
+    // nothing of that name to replace, made a new file, and left the module
+    // item on theirs. That looks like a rename up to the moment the old file's
+    // name is read: it is still `handbook.pdf`, live and deliberate, and
+    // deleting it would be deleting the author's own binary.
     const courseDir = tempCourse();
     const state = stateWithFileItem();
     const calls = mockCanvas([
@@ -635,7 +666,11 @@ describe('an upload that renamed nothing deletes nothing', () => {
       {
         method: 'GET',
         path: `/api/v1/files/${OLD_FILE_ID}`,
-        body: { id: OLD_FILE_ID, display_name: 'handbook.pdf' },
+        body: {
+          id: OLD_FILE_ID,
+          display_name: 'handbook.pdf',
+          folder_id: 5001,
+        },
       },
     ]);
 
@@ -646,7 +681,7 @@ describe('an upload that renamed nothing deletes nothing', () => {
     assert.deepEqual(
       fileDeletes(calls),
       [],
-      'the same name means the upload replaced it, so there is no orphan',
+      'the same name means the old file is not an orphan of this upload',
     );
   });
 
@@ -707,6 +742,285 @@ describe('an upload that renamed nothing deletes nothing', () => {
     assert.deepEqual(outcome.errors, []);
     assert.deepEqual(fileDeletes(calls), []);
     assert.deepEqual(fileReads(calls), []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A new file id, and what the module item says it means
+// ---------------------------------------------------------------------------
+
+/**
+ * Which module item a file item keeps when its upload comes back under a new
+ * file id.
+ *
+ * Measured on a Canvas sandbox on 2026-10-01: new bytes uploaded under the same
+ * name replace the file under a *new* id, and Canvas repoints the module item
+ * at the replacement by itself. The push read the new id as a rename, deleted
+ * that item and created another, so every edit of a binary cost the item its id
+ * (with it every `/modules/items/:id` link and any completion requirement on
+ * it) and put it at the end of the module, where the next run read it as
+ * Canvas reordering the module and offered to renumber the author's files to
+ * match.
+ *
+ * The module item is read after the upload and settles it. Pointing at the
+ * upload already, it is a replacement: nothing is recreated and nothing
+ * cleaned up. Still on the old file, it is a rename, and the item is recreated
+ * where it was. Gone, it is created again, with no position to keep. The last
+ * test is the fence: a read that fails for any other reason stops the update,
+ * because guessing is how a kept item gets deleted.
+ */
+
+/** A replacement as the upload answers for it, and as a later read does. */
+const REPLACEMENT = {
+  id: NEW_FILE_ID,
+  display_name: 'handbook.pdf',
+  size: 9,
+  modified_at: '2026-10-01T09:30:00Z',
+  updated_at: '2026-10-01T09:30:00Z',
+};
+
+/**
+ * What the gather handed over before the upload: the module item on the old
+ * file, at `position`, and the old file behind it.
+ */
+function gatheredBeforeUpload({ position = 1 } = {}) {
+  return new Map([
+    [
+      String(MODULE_ITEM_ID),
+      {
+        item: { ...liveItemRoute(OLD_FILE_ID, { position }).body },
+        content: {
+          id: OLD_FILE_ID,
+          display_name: 'handbook.pdf',
+          size: 9,
+          modified_at: '2026-08-19T09:00:00Z',
+          updated_at: '2026-08-19T09:00:00Z',
+        },
+      },
+    ],
+  ]);
+}
+
+/** Every write to a module item, in the order it was sent. */
+function moduleItemWrites(calls) {
+  return calls.filter(
+    (call) =>
+      call.method !== 'GET' && call.url.includes(`/modules/${MODULE_ID}/items`),
+  );
+}
+
+describe('an upload that comes back under a new file id', () => {
+  it('keeps the module item Canvas repointed, and records what the next gather reads', async () => {
+    silence();
+    // The defect as measured. The route table offers the upload and the read
+    // and nothing else, so a delete or a create of the module item finds no
+    // route and fails the action.
+    const courseDir = tempCourse();
+    const state = stateWithFileItem();
+    const calls = mockCanvas([
+      ...uploadRoutes(NEW_FILE_ID, 'handbook.pdf', REPLACEMENT),
+      liveItemRoute(NEW_FILE_ID),
+    ]);
+
+    const outcome = await run([updateAction()], {
+      courseDir,
+      state,
+      canvasContent: gatheredBeforeUpload(),
+    });
+
+    assert.deepEqual(outcome.errors, []);
+    assert.deepEqual(
+      moduleItemWrites(calls),
+      [],
+      'Canvas already repointed the item, so it is not this run’s to replace',
+    );
+    assert.deepEqual(
+      fileReads(calls),
+      [],
+      'a replacement orphans nothing, so nothing needs reading',
+    );
+    assert.deepEqual(fileDeletes(calls), []);
+
+    const row = state.modules['01-intro'].items[WRAPPER];
+    assert.equal(row.canvas_id, NEW_FILE_ID);
+    assert.equal(row.module_item_id, MODULE_ITEM_ID);
+
+    // The row was recorded from the gathered module item, which still names
+    // the old file. Nothing a fingerprint hashes reads `content_id`, and this
+    // is the proof: the next gather, reading the repointed item and the
+    // replacement behind it, arrives at the same hash, and the run after the
+    // push has nothing to do.
+    mock.restoreAll();
+    silence();
+    mockCanvas([
+      {
+        method: 'GET',
+        path: `/modules/${MODULE_ID}/items`,
+        body: [liveItemRoute(NEW_FILE_ID).body],
+      },
+      {
+        method: 'GET',
+        path: '/modules',
+        body: [{ id: MODULE_ID, name: 'Intro', position: 1 }],
+      },
+      {
+        method: 'GET',
+        path: `/api/v1/files/${NEW_FILE_ID}`,
+        body: { ...REPLACEMENT, folder_id: 5000 },
+      },
+    ]);
+    const canvas = await gatherCanvas({ courseId: COURSE_ID, base: null });
+    assert.equal(
+      row.canvas_hash,
+      canvas.modules[0].items[0].canvasHash,
+      'the row must describe the item the next gather reads',
+    );
+    const again = plan({
+      base: state,
+      local: gatherLocal({ courseDir, gitDirty: CLEAN }),
+      canvas,
+    });
+    assert.deepEqual(again.actions, [], 'a sync after a push must do nothing');
+  });
+
+  it('recreates a renamed binary’s item at the position it holds now', async () => {
+    silence();
+    // The gather saw the item at position 2 and Canvas has it at 3 by the time
+    // the upload lands, the way an earlier reorder in the same run would leave
+    // it. The live position is the one the item goes back to.
+    const courseDir = tempCourse();
+    const state = stateWithFileItem();
+    const calls = mockCanvas([
+      ...uploadRoutes(NEW_FILE_ID, 'handbook.pdf'),
+      liveItemRoute(OLD_FILE_ID, { position: 3 }),
+      {
+        method: 'DELETE',
+        path: `/modules/${MODULE_ID}/items/${MODULE_ITEM_ID}`,
+        body: {},
+      },
+      {
+        method: 'POST',
+        path: `/modules/${MODULE_ID}/items`,
+        body: { id: 92, title: 'Syllabus', indent: 0, position: 3 },
+      },
+      {
+        method: 'GET',
+        path: `/api/v1/files/${OLD_FILE_ID}`,
+        body: { id: OLD_FILE_ID, display_name: 'syllabus.pdf' },
+      },
+      { method: 'DELETE', path: `/api/v1/files/${OLD_FILE_ID}`, body: {} },
+    ]);
+
+    const outcome = await run([updateAction()], {
+      courseDir,
+      state,
+      canvasContent: gatheredBeforeUpload({ position: 2 }),
+    });
+
+    assert.deepEqual(outcome.errors, []);
+    const writes = moduleItemWrites(calls);
+    assert.deepEqual(
+      writes.map((call) => call.method),
+      ['DELETE', 'POST'],
+    );
+    assert.equal(
+      writes[1].body.module_item.position,
+      3,
+      'the item goes back where it was, not to the end of the module',
+    );
+    assert.equal(writes[1].body.module_item.content_id, NEW_FILE_ID);
+
+    // The rename's own cleanup is unchanged: the old name was read, and the
+    // file it named deleted.
+    assert.equal(fileReads(calls).length, 1);
+    const deletes = fileDeletes(calls);
+    assert.equal(deletes.length, 1);
+    assert.match(deletes[0].url, new RegExp(`/api/v1/files/${OLD_FILE_ID}$`));
+
+    const row = state.modules['01-intro'].items[WRAPPER];
+    assert.equal(row.canvas_id, NEW_FILE_ID);
+    assert.equal(row.module_item_id, 92);
+  });
+
+  it('creates the item without a position when Canvas no longer has it', async () => {
+    silence();
+    // Deleted by hand before this run, so there is nothing to delete and no
+    // place to keep. The old id answers with the replacement, which is what
+    // Canvas does after one, so the name check finds the name just uploaded
+    // and nothing is deleted on that side either.
+    const courseDir = tempCourse();
+    const state = stateWithFileItem();
+    const calls = mockCanvas([
+      ...uploadRoutes(NEW_FILE_ID, 'handbook.pdf', REPLACEMENT),
+      {
+        method: 'GET',
+        path: `/modules/${MODULE_ID}/items/${MODULE_ITEM_ID}`,
+        status: 404,
+        body: {
+          errors: [{ message: 'The specified resource does not exist.' }],
+        },
+      },
+      {
+        method: 'POST',
+        path: `/modules/${MODULE_ID}/items`,
+        body: { id: 92, title: 'Syllabus', indent: 0 },
+      },
+      {
+        method: 'GET',
+        path: `/api/v1/files/${OLD_FILE_ID}`,
+        body: REPLACEMENT,
+      },
+    ]);
+
+    const outcome = await run([updateAction()], { courseDir, state });
+
+    assert.deepEqual(outcome.errors, []);
+    assert.deepEqual(
+      calls.filter((call) => call.method === 'DELETE'),
+      [],
+      'an item already gone is not deleted again, and the file is live',
+    );
+    const writes = moduleItemWrites(calls);
+    assert.deepEqual(
+      writes.map((call) => call.method),
+      ['POST'],
+    );
+    assert.equal(
+      Object.hasOwn(writes[0].body.module_item, 'position'),
+      false,
+      'an item that is gone has no position to keep',
+    );
+
+    const row = state.modules['01-intro'].items[WRAPPER];
+    assert.equal(row.canvas_id, NEW_FILE_ID);
+    assert.equal(row.module_item_id, 92);
+  });
+
+  it('stops, and changes nothing, when the module item cannot be read', async () => {
+    silence();
+    // A refusal that is not a 404 says nothing about which kind of change the
+    // upload made. Reading it as either one would be a guess, and the guess
+    // that it was a rename deletes an item Canvas may already have repointed.
+    const courseDir = tempCourse();
+    const state = stateWithFileItem();
+    const rowBefore = { ...state.modules['01-intro'].items[WRAPPER] };
+    const calls = mockCanvas([
+      ...uploadRoutes(NEW_FILE_ID, 'handbook.pdf', REPLACEMENT),
+      {
+        method: 'GET',
+        path: `/modules/${MODULE_ID}/items/${MODULE_ITEM_ID}`,
+        status: 403,
+        body: { message: 'user not authorized to perform that action' },
+      },
+    ]);
+
+    const outcome = await run([updateAction()], { courseDir, state });
+
+    assert.equal(outcome.errors.length, 1);
+    assert.match(outcome.errors[0].error, /status 403/);
+    assert.deepEqual(moduleItemWrites(calls), []);
+    assert.deepEqual(fileDeletes(calls), []);
+    assert.deepEqual(state.modules['01-intro'].items[WRAPPER], rowBefore);
   });
 });
 
