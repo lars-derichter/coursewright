@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- A pull now downloads a file item's binary onto the path its `file_ref` names
+  when that path is inside a `_files/` folder under `course/`, and leaves the
+  `file_ref` as written. It used to download into the `_files/` beside the
+  wrapper, under the Canvas file's name, and repoint the wrapper there. So a
+  wrapper in a subfolder that names the module's own folder as
+  `../_files/pack.md`, the way `/study-pack-build` writes one, was pointed at a
+  second copy in a new `_files/` inside the subfolder, and a `file_ref` into the
+  shared `course/_files/` was pointed at a module-local copy. The filename is
+  kept too, so a file renamed in Canvas no longer leaves the old copy behind. A
+  `file_ref` that leaves `course/` or points outside every `_files/` folder is
+  still repointed, because the bytes come from Canvas and could otherwise land
+  over a page.
+
 ## 1.5.2 (2026-10-01)
 
 - A pull no longer rewrites a file item's wrapper that already says what Canvas

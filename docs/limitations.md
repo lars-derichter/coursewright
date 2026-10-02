@@ -524,19 +524,27 @@ to merge against even in principle.
   that URL belongs to a course this one cannot vouch for. The next push of the
   page that embeds it uploads the file into this course and takes ownership,
   rather than leaving the embed pointing across courses.
-- **A pull never creates a shared file.** Push, the preview and the exports all
-  resolve a binary under the root `course/_files/`
-  ([Shared Files](markdown.md#shared-files)), but a binary first met on Canvas
-  is always downloaded into the referencing module's own `_files/`, because pull
-  cannot know the file is meant to be shared. One that already has a row is
-  preserved: later pulls link every page to it rather than downloading a second
-  copy. To share a file pull brought down, move it under `course/_files/` and
-  repoint the references yourself.
-- **A pull that rewrites a file-item wrapper repoints its `file_ref` at a
-  module-local copy.** The wrapper is regenerated with `file_ref: _files/<name>`
-  and the binary downloaded beside it, so a hand-written
-  `file_ref: ../_files/shared.pdf` does not survive such a pull. Shared binaries
-  are for embedding in pages; give a file item its own copy in the module.
+- **A pull never decides a file is shared.** Push, the preview and the exports
+  all resolve a binary under the root `course/_files/`
+  ([Shared Files](markdown.md#shared-files)), but a binary a page embeds that
+  pull first meets on Canvas is always downloaded into the referencing module's
+  own `_files/`, because pull cannot know the file is meant to be shared. One
+  that already has a row is preserved: later pulls link every page to it rather
+  than downloading a second copy. To share a file pull brought down, move it
+  under `course/_files/` and repoint the references yourself.
+- **A pull keeps a file item's `file_ref` only when it points into a `_files/`
+  folder.** A `file_ref` into any `_files/` folder under `course/` stays as you
+  wrote it, and the binary is downloaded onto the path it names: the module's
+  own `_files/`, the shared `course/_files/`, or, from a subfolder, the module's
+  `_files/` as `../_files/pack.md`. The filename is yours too, so a file renamed
+  in Canvas still lands under the name the wrapper gives it. Any other
+  `file_ref`, one that leaves `course/` or names a path outside every `_files/`
+  folder, is not followed, because the bytes come from Canvas and could land
+  over a page. The binary goes into the `_files/` beside the wrapper instead,
+  under the Canvas file's name, and the wrapper is rewritten with
+  `file_ref: _files/<name>`. For a wrapper in a subfolder that is the
+  subfolder's own `_files/`, not the module's. A file item first met on Canvas
+  has no `file_ref` to keep, so its binary lands there too.
 - **Pull does not rename your files.** A Canvas title lands in the file's
   frontmatter as `title:` and a Canvas module name lands in the folder's
   `_category_.json`, while the filename stays as you wrote it, because that path

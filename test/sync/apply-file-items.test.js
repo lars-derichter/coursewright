@@ -863,12 +863,15 @@ describe('pruning a file item whose Canvas file something else still names', () 
  * What stops a pulled `file` item landing on bytes git holds no copy of.
  *
  * `writeLocalFileItem` writes twice: the wrapper markdown at `action.itemPath`,
- * and the binary beside it under `_files/`. `guardDirty` in `lib/sync/plan.js`
- * protects the first and has never known about the second — the binary's name
- * is Canvas's `display_name` put through `toFileSlug`, so the destination does
- * not exist as a fact until Canvas has answered, and the planner never touches
- * the network. An author's own `handout.pdf` and a Canvas file of that name are
- * therefore one path, and the Canvas one won by simply being written over it.
+ * and the binary, at the path the wrapper's `file_ref` names or, when it names
+ * none a pull may write to, beside it under `_files/`. `guardDirty` in
+ * `lib/sync/plan.js` protects the first and has never known about the second.
+ * The planner sees a wrapper as a path and a hash, not as the file it names,
+ * and the fallback's name is Canvas's `display_name` put through `toFileSlug`,
+ * which does not exist as a fact until Canvas has answered, while the planner
+ * never touches the network. An author's own `handout.pdf` and a Canvas file
+ * of that name are therefore one path, and the Canvas one won by simply being
+ * written over it.
  *
  * This is `downloadReferencedFiles`'s case (see `apply-embedded-files.test.js`)
  * with a different destination, and it takes the same remedy: the run's single
@@ -1154,23 +1157,25 @@ describe('a pulled file item onto an uncommitted binary', () => {
     assert.equal(bytesAt(courseDir), CANVAS_BYTES);
   });
 
-  it('guards the destination Canvas named, not the one the wrapper names', async () => {
+  it('guards the destination Canvas named for an item with no wrapper yet', async () => {
     silence();
-    // The reason this cannot be a planner-side guard. The wrapper says
-    // `_files/handbook.pdf` and that file is clean; Canvas calls its file
-    // "Course Notes.pdf", which slugs to a different path — and the author has
-    // an untracked file sitting exactly there. Nothing the planner can read
-    // names that path.
+    // The reason this cannot be a planner-side guard. A create has no wrapper
+    // whose `file_ref` could name a place for the bytes, so they land at
+    // Canvas's name for the file: "Course Notes.pdf", which slugs to
+    // `_files/course-notes.pdf`, and the author has an untracked file sitting
+    // exactly there. Nothing the planner can read names that path.
     const courseDir = tempCourse();
+    fs.rmSync(path.join(courseDir, WRAPPER));
     const collision = '01-intro/_files/course-notes.pdf';
     fs.writeFileSync(path.join(courseDir, collision), AUTHOR_BYTES, 'utf8');
     const state = stateWithFileItem();
+    delete state.modules['01-intro'].items[WRAPPER];
     const content = pullContent();
     content.get(String(MODULE_ITEM_ID)).content.display_name =
       'Course Notes.pdf';
     const calls = mockCanvas(pullRoutes());
 
-    const outcome = await run([pullAction()], {
+    const outcome = await run([pullAction('create-local-item')], {
       courseDir,
       state,
       canvasContent: content,
@@ -1188,6 +1193,7 @@ describe('a pulled file item onto an uncommitted binary', () => {
       fs.readFileSync(path.join(courseDir, collision), 'utf8'),
       AUTHOR_BYTES,
     );
+    assert.equal(fs.existsSync(path.join(courseDir, WRAPPER)), false);
   });
 });
 
@@ -1207,19 +1213,35 @@ describe('a pulled file item onto an uncommitted binary', () => {
  *
  * The first two pin the bytes and the fingerprint together, because a wrapper
  * left alone with a row hashed from the regenerated text would read as changed
- * locally on the very next run. The last two are the fences: a new title and a
- * `file_ref` naming somewhere other than the download still rewrite.
+ * locally on the very next run. The last is the fence: a new title still
+ * rewrites. Where the bytes land, and when `file_ref` is rewritten to follow
+ * them, is the next block's question.
  */
 
 const QUOTED_WRAPPER =
   "---\ntitle: 'Syllabus'\ncanvas_type: file\nfile_ref: _files/handbook.pdf\n---\n";
 
-/** Pull the item onto a clean tree, with whatever wrapper the test wrote. */
-async function pullOnto(courseDir, state, { title = 'Syllabus' } = {}) {
+/**
+ * Pull the item onto a clean tree, with whatever wrapper the test wrote. The
+ * options move the item into a subfolder, retitle it, rename the Canvas file
+ * behind it, or make it a create.
+ */
+async function pullOnto(
+  courseDir,
+  state,
+  {
+    title = 'Syllabus',
+    itemPath = WRAPPER,
+    displayName = null,
+    type = 'update-local-item',
+  } = {},
+) {
   const content = pullContent();
-  content.get(String(MODULE_ITEM_ID)).item.title = title;
+  const entry = content.get(String(MODULE_ITEM_ID));
+  entry.item.title = title;
+  if (displayName) entry.content.display_name = displayName;
   mockCanvas(pullRoutes());
-  return run([{ ...pullAction(), title }], {
+  return run([{ ...pullAction(type), itemPath, title }], {
     courseDir,
     state,
     canvasContent: content,
@@ -1228,15 +1250,15 @@ async function pullOnto(courseDir, state, { title = 'Syllabus' } = {}) {
 }
 
 /** The `local_hash` the next `gatherLocal` computes for the wrapper. */
-function gatheredHash(courseDir) {
+function gatheredHash(courseDir, itemPath = WRAPPER) {
   const { modules } = gatherLocal({ courseDir, gitDirty: CLEAN });
   return modules
     .flatMap((mod) => mod.items)
-    .find((item) => item.itemPath === WRAPPER).localHash;
+    .find((item) => item.itemPath === itemPath).localHash;
 }
 
-function wrapperAt(courseDir) {
-  return fs.readFileSync(path.join(courseDir, WRAPPER), 'utf8');
+function wrapperAt(courseDir, itemPath = WRAPPER) {
+  return fs.readFileSync(path.join(courseDir, itemPath), 'utf8');
 }
 
 describe('a pulled file item whose wrapper already says what Canvas says', () => {
@@ -1301,34 +1323,278 @@ describe('a pulled file item whose wrapper already says what Canvas says', () =>
       gatheredHash(courseDir),
     );
   });
+});
 
-  it('still repoints a file_ref into the shared folder at the module-local copy', async () => {
+// ---------------------------------------------------------------------------
+// Where a pulled file item's binary lands
+// ---------------------------------------------------------------------------
+
+/**
+ * The wrapper says where its binary lives, and a pull downloads there.
+ *
+ * `writeLocalFileItem` used to download every binary into the `_files/` beside
+ * the wrapper, under Canvas's name for the file, and rewrite `file_ref` to
+ * match. A wrapper `/study-pack-build` writes in a subsection names
+ * `../_files/<pack>.md`, the module's own folder, so every pull of one left the
+ * pack where it was, put a second copy in a new `_files/` inside the
+ * subsection, and pointed the wrapper at the copy. The same happened to a ref
+ * into the shared `course/_files/`, and to any binary whose Canvas file had
+ * been renamed.
+ *
+ * A ref into any `_files/` folder under `course/` is now kept, path and name
+ * alike, and the wrapper stays byte for byte. The fences are the refs a pull
+ * must not follow, because what it writes there is Canvas's bytes: one escaping
+ * `course/` and one outside every `_files/` folder both fall back to the old
+ * repoint, and nothing is written where they point. Then the dirty guard asks
+ * about the kept path, and a create, with no wrapper to ask, still lands beside
+ * itself.
+ */
+
+/** A wrapper the way `/study-pack-build` writes one, in a subsection folder. */
+const PACK_WRAPPER_PATH = '01-intro/04-study-packs/01-pack.md';
+const PACK_WRAPPER =
+  '---\ntitle: Study Pack\ncanvas_type: file\nfile_ref: ../_files/pack.md\n---\n';
+const PACK_REF = '01-intro/_files/pack.md';
+
+/** The pack in the module's own `_files/`, its wrapper in a subsection. */
+function courseWithPackWrapper() {
+  const courseDir = tempCourse();
+  fs.rmSync(path.join(courseDir, WRAPPER));
+  fs.mkdirSync(path.join(courseDir, '01-intro/04-study-packs'));
+  fs.writeFileSync(
+    path.join(courseDir, '01-intro/04-study-packs/_category_.json'),
+    '{ "label": "Study packs", "position": 4 }\n',
+    'utf8',
+  );
+  fs.writeFileSync(
+    path.join(courseDir, PACK_WRAPPER_PATH),
+    PACK_WRAPPER,
+    'utf8',
+  );
+  fs.writeFileSync(path.join(courseDir, PACK_REF), AUTHOR_BYTES, 'utf8');
+  return courseDir;
+}
+
+/** The state a previous sync left, with the item's row at `itemPath`. */
+function stateWithFileItemAt(itemPath) {
+  const state = stateWithFileItem();
+  const mod = state.modules['01-intro'];
+  mod.items = { [itemPath]: mod.items[WRAPPER] };
+  mod.item_order = [itemPath];
+  return state;
+}
+
+/** Rewrite the module-level wrapper to name its binary through `fileRef`. */
+function wrapperNaming(courseDir, fileRef) {
+  const text = `---\ntitle: Syllabus\ncanvas_type: file\nfile_ref: ${fileRef}\n---\n`;
+  fs.writeFileSync(path.join(courseDir, WRAPPER), text, 'utf8');
+  return text;
+}
+
+describe('where a pulled file item’s binary lands', () => {
+  it('downloads into the shared folder and keeps the ref', async () => {
     silence();
-    // The repoint `docs/limitations.md` documents. Same title, same type, and a
-    // `file_ref` naming a file of the same name, but in `course/_files/`: the
-    // download lands in the module's own `_files/`, so the wrapper no longer
-    // says where the bytes are and has to be rewritten to say it.
+    // Same title, same type, and a `file_ref` naming `course/_files/`. The
+    // shared copy is tracked and clean, so it is one `git checkout` away and
+    // Canvas wins it, exactly as it wins a module-local one.
     const courseDir = tempCourse();
     const shared = path.join(courseDir, '_files/handbook.pdf');
     fs.mkdirSync(path.dirname(shared), { recursive: true });
     fs.writeFileSync(shared, AUTHOR_BYTES, 'utf8');
     fs.rmSync(path.join(courseDir, BINARY_REF));
-    fs.writeFileSync(
-      path.join(courseDir, WRAPPER),
-      '---\ntitle: Syllabus\ncanvas_type: file\nfile_ref: ../_files/handbook.pdf\n---\n',
-      'utf8',
-    );
+    const wrapper = wrapperNaming(courseDir, '../_files/handbook.pdf');
     const state = stateWithFileItem();
 
     const outcome = await pullOnto(courseDir, state);
 
     assert.deepEqual(outcome.errors, []);
-    assert.match(wrapperAt(courseDir), /^file_ref: _files\/handbook\.pdf$/m);
-    assert.equal(bytesAt(courseDir), CANVAS_BYTES);
+    assert.equal(fs.readFileSync(shared, 'utf8'), CANVAS_BYTES);
+    assert.equal(wrapperAt(courseDir), wrapper, 'the ref is the author’s');
     assert.equal(
-      fs.readFileSync(shared, 'utf8'),
-      AUTHOR_BYTES,
-      'the shared copy is not the pull’s to touch',
+      fs.existsSync(path.join(courseDir, BINARY_REF)),
+      false,
+      'no module-local copy may appear beside it',
     );
+    assert.equal(
+      state.modules['01-intro'].items[WRAPPER].local_hash,
+      gatheredHash(courseDir),
+    );
+  });
+
+  it('downloads a subsection wrapper’s pack into the module’s _files/', async () => {
+    silence();
+    // The case that motivated the rule. `../_files/pack.md` from a subsection
+    // is the module's own folder, and the fallback would have made a new
+    // `_files/` inside the subsection and pointed the wrapper at the copy.
+    const courseDir = courseWithPackWrapper();
+    const state = stateWithFileItemAt(PACK_WRAPPER_PATH);
+
+    const outcome = await pullOnto(courseDir, state, {
+      title: 'Study Pack',
+      itemPath: PACK_WRAPPER_PATH,
+      displayName: 'pack.md',
+    });
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(outcome.applied.length, 1);
+    assert.equal(
+      fs.readFileSync(path.join(courseDir, PACK_REF), 'utf8'),
+      CANVAS_BYTES,
+    );
+    assert.equal(
+      fs.existsSync(path.join(courseDir, '01-intro/04-study-packs/_files')),
+      false,
+      'no `_files/` may appear inside the subsection',
+    );
+    assert.equal(wrapperAt(courseDir, PACK_WRAPPER_PATH), PACK_WRAPPER);
+    assert.equal(
+      state.modules['01-intro'].items[PACK_WRAPPER_PATH].local_hash,
+      gatheredHash(courseDir, PACK_WRAPPER_PATH),
+    );
+  });
+
+  it('keeps the binary’s name when Canvas renamed the file', async () => {
+    silence();
+    // The name is the author's too. Canvas calling the file "Course Notes.pdf"
+    // used to land a second copy at `_files/course-notes.pdf` and leave
+    // `handbook.pdf` behind with nothing naming it.
+    const courseDir = tempCourse();
+    const wrapper = wrapperAt(courseDir);
+    const state = stateWithFileItem();
+
+    const outcome = await pullOnto(courseDir, state, {
+      displayName: 'Course Notes.pdf',
+    });
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(bytesAt(courseDir), CANVAS_BYTES);
+    assert.deepEqual(fs.readdirSync(path.join(courseDir, '01-intro/_files')), [
+      'handbook.pdf',
+    ]);
+    assert.equal(wrapperAt(courseDir), wrapper);
+  });
+
+  it('repoints a ref that escapes course/, and writes nothing outside it', async () => {
+    silence();
+    // A sibling directory whose name starts with the course's own, holding a
+    // `_files/` folder: a string-prefix containment test would let it through,
+    // and so would the `_files/` test on its own.
+    const courseDir = tempCourse();
+    const outside = fs.mkdtempSync(`${courseDir}-outside-`);
+    const outsideBinary = path.join(outside, '_files/handbook.pdf');
+    fs.mkdirSync(path.dirname(outsideBinary));
+    fs.writeFileSync(outsideBinary, AUTHOR_BYTES, 'utf8');
+    fs.rmSync(path.join(courseDir, BINARY_REF));
+    const ref = path
+      .relative(path.join(courseDir, '01-intro'), outsideBinary)
+      .split(path.sep)
+      .join('/');
+    wrapperNaming(courseDir, ref);
+    const state = stateWithFileItem();
+
+    const outcome = await pullOnto(courseDir, state);
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(fs.readFileSync(outsideBinary, 'utf8'), AUTHOR_BYTES);
+    assert.deepEqual(fs.readdirSync(path.dirname(outsideBinary)), [
+      'handbook.pdf',
+    ]);
+    assert.equal(bytesAt(courseDir), CANVAS_BYTES);
+    assert.match(wrapperAt(courseDir), /^file_ref: _files\/handbook\.pdf$/m);
+    assert.equal(
+      state.modules['01-intro'].items[WRAPPER].local_hash,
+      gatheredHash(courseDir),
+    );
+  });
+
+  it('repoints a ref outside every _files/ folder, and leaves what it names alone', async () => {
+    silence();
+    // Spelt to look as though it sits in `_files/`, and resolving to the page
+    // beside the wrapper: the ref is judged by where it lands, and a pull that
+    // followed it would have written a PDF over the author's page.
+    const courseDir = tempCourse();
+    const page = path.join(courseDir, '01-intro/02-notes.md');
+    const notes = '---\ntitle: Notes\n---\n\nThe author’s page.\n';
+    fs.writeFileSync(page, notes, 'utf8');
+    fs.rmSync(path.join(courseDir, BINARY_REF));
+    wrapperNaming(courseDir, '_files/../02-notes.md');
+    const state = stateWithFileItem();
+
+    const outcome = await pullOnto(courseDir, state);
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(fs.readFileSync(page, 'utf8'), notes);
+    assert.equal(bytesAt(courseDir), CANVAS_BYTES);
+    assert.match(wrapperAt(courseDir), /^file_ref: _files\/handbook\.pdf$/m);
+  });
+
+  it('refuses a kept destination that holds uncommitted work', async () => {
+    silence();
+    // The guard asks about the path the bytes would land on, relative to
+    // `course/`: `_files/handbook.pdf`. The `01-intro/_files/handbook.pdf` the
+    // fallback would have named is clean, and asking about it would let the
+    // download through onto the author's only copy.
+    const courseDir = tempCourse();
+    const shared = path.join(courseDir, '_files/handbook.pdf');
+    fs.mkdirSync(path.dirname(shared), { recursive: true });
+    fs.writeFileSync(shared, AUTHOR_BYTES, 'utf8');
+    const wrapper = wrapperNaming(courseDir, '../_files/handbook.pdf');
+    const state = stateWithFileItem();
+    const rowBefore = { ...state.modules['01-intro'].items[WRAPPER] };
+    const calls = mockCanvas(pullRoutes());
+
+    const outcome = await run([pullAction()], {
+      courseDir,
+      state,
+      canvasContent: pullContent(),
+      gitDirty: {
+        available: true,
+        paths: new Set(['_files', '_files/handbook.pdf']),
+        reason: null,
+      },
+    });
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(fetchedBytes(calls), false);
+    assert.equal(outcome.skipped.length, 1);
+    assert.ok(
+      outcome.skipped[0].remedy.startsWith('_files/handbook.pdf holds'),
+      outcome.skipped[0].remedy,
+    );
+    assert.equal(fs.readFileSync(shared, 'utf8'), AUTHOR_BYTES);
+    assert.equal(wrapperAt(courseDir), wrapper);
+    assert.deepEqual(state.modules['01-intro'].items[WRAPPER], rowBefore);
+  });
+
+  it('puts a created item’s binary in the wrapper’s own _files/', async () => {
+    silence();
+    // No wrapper yet, so nothing names a place: the bytes land beside the new
+    // wrapper, which for an item in a subsection is the subsection's folder.
+    const courseDir = tempCourse();
+    fs.rmSync(path.join(courseDir, WRAPPER));
+    const state = stateWithFileItem();
+    delete state.modules['01-intro'].items[WRAPPER];
+
+    const outcome = await pullOnto(courseDir, state, {
+      title: 'Study Pack',
+      itemPath: PACK_WRAPPER_PATH,
+      displayName: 'pack.md',
+      type: 'create-local-item',
+    });
+
+    assert.deepEqual(outcome.errors, []);
+    assert.equal(
+      fs.readFileSync(
+        path.join(courseDir, '01-intro/04-study-packs/_files/pack.md'),
+        'utf8',
+      ),
+      CANVAS_BYTES,
+    );
+    assert.equal(fs.existsSync(path.join(courseDir, PACK_REF)), false);
+    assert.match(
+      wrapperAt(courseDir, PACK_WRAPPER_PATH),
+      /^file_ref: _files\/pack\.md$/m,
+    );
+    assert.ok(state.modules['01-intro'].items[PACK_WRAPPER_PATH]);
   });
 });
