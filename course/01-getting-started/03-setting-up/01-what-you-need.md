@@ -3,9 +3,14 @@ title: ⚙️ What You Need
 canvas_type: page
 ---
 
-Four things, all free: three programs and one account. You install them once and
-then forget about them. If you already have them, go straight to
-[Your Course Project](02-your-course-project.md).
+Coursewright lives on GitHub, at
+[github.com/lars-derichter/coursewright](https://github.com/lars-derichter/coursewright).
+You don’t download it from there like an app: you make your own copy of the
+project, one per course, and the next page shows you how.
+
+First, your computer needs four things, all free: three programs and one
+account. You install them once and then forget about them. If you already have
+them, go straight to [Your Course Project](02-your-course-project.md).
 
 Take them in the order below. On macOS the git install runs from inside VS Code,
 so VS Code comes first.

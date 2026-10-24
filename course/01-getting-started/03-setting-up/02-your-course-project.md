@@ -10,8 +10,8 @@ whole history.
 
 ## Make Your Copy
 
-1. Open the
-   [Coursewright project page](https://github.com/lars-derichter/coursewright).
+1. Open the Coursewright project on GitHub:
+   [github.com/lars-derichter/coursewright](https://github.com/lars-derichter/coursewright).
 2. Click **Use this template** at the top right, then **Create a new
    repository**.
 3. Give it a name that says which course it is: `course-web-development`,

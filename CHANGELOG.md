@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- The tutorial's **Setting Up** pages say where Coursewright comes from. **What
+  You Need** opened with the four installs and never named the project, and
+  **Your Course Project** linked it only as "the Coursewright project page", so
+  a visitor reading coursewright.md had to go back to the home page to find the
+  GitHub address. **What You Need** now opens with the address and says you get
+  Coursewright by copying that project rather than installing it, and **Your
+  Course Project** spells the address out in its first step. A course syncing
+  this repository to Canvas sees the two pages reported as modified locally
+  once.
+
 ## 1.5.4 (2026-10-24)
 
 - The dependencies are upgraded: dotenv to 18, `@vscode/vsce` to 4, and
