@@ -41,8 +41,13 @@ npx course setup [options]
 | `-y, --yes`                     | Take the answers from the flags and never prompt          |
 
 Run with no flags for the interactive wizard. `-y` is what makes it scriptable:
-every question needs a matching flag or the run stops with an error rather than
-hanging.
+it never prompts, and a question without a flag takes the answer that changes
+nothing. A setting in `course.config.yml` keeps its current value, no template
+is installed, the tutorial module stays, and Canvas is not connected. A flag
+with a value it does not accept stops the run with an error: a `copy|keep` flag
+given anything else, `--tutorial` given anything but `keep` or `remove`, or an
+unknown `--license`. Without a terminal to prompt in, the command behaves as if
+`-y` were given.
 
 `--footer` and `--license` set the two footer entries
 [The Site Footer](customisation.md#the-site-footer) describes. `--footer none`,
