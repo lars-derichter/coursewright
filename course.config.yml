@@ -27,6 +27,19 @@ export:
   style: generic
   # number_headings: true
 
+# The footer under every page of the course website. Not printed in exports
+# or pushed to Canvas.
+footer:
+  # One line of markdown: links, a badge image, {year} for the current year.
+  # Unset, it reads "Copyright © {year}"; an empty string shows no notice.
+  # text: "© {year} Your Name, Your Institution"
+  # A Creative Commons licence button linking to its deed. Keep it in step
+  # with course/LICENSE.md. One of CC-BY-4.0, CC-BY-SA-4.0, CC-BY-NC-4.0,
+  # CC-BY-NC-SA-4.0, CC-BY-ND-4.0, CC-BY-NC-ND-4.0, CC0-1.0, or none.
+  license: CC-BY-NC-SA-4.0
+  # The "Made with Coursewright" link. false hides it.
+  # credit: false
+
 # Pre-ship checks: what `npx course check` runs and the pre-push hook gates.
 # `links.roots` lists the folders check-links scans for broken relative links
 # (default: course). `extra` lists subcommands check runs after its built-in
@@ -63,3 +76,6 @@ language: en
 #     title: "📘 Terminology"
 #     operators: Symbols
 #     terms: Definitions
+#   site:
+#     credit: "Built with {coursewright}"
+#     license: "Shared under {license}"

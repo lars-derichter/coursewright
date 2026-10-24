@@ -12,6 +12,23 @@
   this repository to Canvas sees the two pages reported as modified locally
   once.
 
+- The website footer is set in `course.config.yml` instead of
+  `docusaurus.config.js`. It used to read "Copyright © 2026" and nothing else,
+  and changing it meant editing a file every upstream update overwrites. A new
+  `footer:` block takes a notice of your own in one line of markdown (`text`,
+  with `{year}` for the year of the build), a Creative Commons licence button
+  linking to its deed (`license`, an SPDX identifier such as `CC-BY-NC-SA-4.0`),
+  and a "Made with Coursewright" link to the project (`credit`). The buttons
+  ship in `static/img/licenses/`, so the site makes no request to Creative
+  Commons. The footer is the website's alone: exports and Canvas do not carry
+  it. The template's `course.config.yml` sets `license: CC-BY-NC-SA-4.0` to
+  match `course/LICENSE.md`. An existing course keeps its own
+  `course.config.yml`, which has no `footer:` block, so its next build shows the
+  same copyright line plus the new credit, and no button. To drop the credit,
+  add `footer:` with `credit: false`; to show the button, add `license:` with
+  the identifier of the licence in your `course/LICENSE.md`.
+  [The Site Footer](docs/customisation.md#the-site-footer) has the details.
+
 ## 1.5.4 (2026-10-24)
 
 - The dependencies are upgraded: dotenv to 18, `@vscode/vsce` to 4, and

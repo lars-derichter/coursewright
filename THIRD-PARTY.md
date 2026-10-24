@@ -23,14 +23,25 @@ exports, so those notices travel with the icons.
 
 ## Property of Their Owners
 
-These ship as a worked example of institutional branding, in the `thomas-more`
-export style and theme. They are covered by **neither** of this repository's
-licences.
+These belong to their owners. They are covered by **neither** of this
+repository's licences.
 
 - `export-styles/thomas-more/logo.png`: the logo of Thomas More University of
   Applied Sciences, a trademark of Thomas More. Used as the example cover mark
-  in that style.
-- The colours in `src/css/themes/thomas-more.css` are Thomas More's.
+  in the `thomas-more` export style, a worked example of institutional branding.
+- The colours in `src/css/themes/thomas-more.css` are Thomas More's, in the
+  theme of the same name.
+- `static/img/licenses/*.svg`: the 88×31 licence buttons from the
+  [Creative Commons press kit](https://creativecommons.org/mission/downloads/),
+  downloaded from `mirrors.creativecommons.org/presskit/buttons/88x31/svg/` and
+  bundled unmodified. They are Creative Commons trademarks, which are not under
+  a Creative Commons licence. The
+  [Creative Commons trademark policy](https://creativecommons.org/policies/#trademark)
+  licenses the button marks on the condition that a button is used "solely to
+  describe the Creative Commons legal tool that applies to a particular work"
+  and links to the relevant deed, and allows no modified version. The site
+  footer shows one only as `footer.license` sets it and always links it to the
+  deed. Do not edit, recolour or reuse these files for anything else.
 
 ## Fonts Referenced but Not Bundled
 

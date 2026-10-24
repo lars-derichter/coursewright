@@ -281,6 +281,44 @@ selected.
 See [export-styling.md](export-styling.md) for what each file controls and for
 the full export pipeline.
 
+### The Site Footer
+
+The course website ends every page with one line, set under `footer:` in
+`course.config.yml`. It belongs to the website alone: PDF and DOCX exports do
+not print it, and a push does not send it to Canvas.
+
+```yml
+footer:
+  text: "© {year} Jane Doe, [Example University](https://example.edu)"
+  license: CC-BY-NC-SA-4.0
+  credit: true
+```
+
+The line has up to three parts, in this order:
+
+- **`text`** is your notice, one line of markdown: a link, a badge image,
+  `{year}` for the year of the build. Left out, it reads "Copyright © {year}".
+  An empty string (`text: ""`) shows no notice at all.
+- **`license`** adds a Creative Commons licence button that links to the
+  licence's deed. It takes an SPDX identifier: `CC-BY-4.0`, `CC-BY-SA-4.0`,
+  `CC-BY-NC-4.0`, `CC-BY-NC-SA-4.0`, `CC-BY-ND-4.0`, `CC-BY-NC-ND-4.0` or
+  `CC0-1.0`. Left out or set to `none`, there is no button; an identifier not on
+  that list is ignored with a warning. The buttons ship in
+  `static/img/licenses/`, so the site makes no request to Creative Commons for
+  them. They are Creative Commons trademarks, used under the terms
+  [THIRD-PARTY.md](../THIRD-PARTY.md) records.
+- **`credit`** is the "Made with Coursewright" link to the Coursewright project.
+  It is on unless you set it to `false`.
+
+The template ships with `license: CC-BY-NC-SA-4.0` to match its own
+[`course/LICENSE.md`](../course/LICENSE.md); see [Licence](#licence) for keeping
+the two in step. A course that sets no `footer:` at all gets the notice and the
+credit, without a button. The labels around the button and the credit follow the
+course language and can be overridden under `labels.site` (`credit`, with
+`{coursewright}` for the link; `license`, the button's alternative text, with
+`{license}` for the licence name). The footer's colours come from the theme,
+like everything else on the site.
+
 ## Pre-Ship Checks
 
 `npx course check` runs every check a course should pass before a push, and
@@ -317,7 +355,10 @@ The licences follow the tooling/content split:
 - Your **course content** defaults to CC BY-NC-SA 4.0, declared in
   [`course/LICENSE.md`](../course/LICENSE.md). That file is yours: edit it to
   change or replace the licence for your own material, and update the licence
-  section of your README to match.
+  section of your README to match. If you change the licence, change
+  `footer.license` in `course.config.yml` with it, so the button under every
+  page of the website names the same licence (see
+  [The Site Footer](#the-site-footer)).
 
 ## The Built-In Tutorial Module
 

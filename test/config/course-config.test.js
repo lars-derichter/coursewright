@@ -273,6 +273,84 @@ describe('loadCourseConfig', () => {
     assert.match(messages[1], /unknown key "checks\.links\.root"/);
   });
 
+  it('defaults the footer when it is absent, without warning', () => {
+    const config = loadCourseConfig(tmpDir);
+    assert.deepEqual(config.footer, {
+      text: 'Copyright © {year}',
+      license: null,
+      credit: true,
+    });
+    assert.ok(Object.isFrozen(config.footer));
+    assert.equal(warnMock.mock.callCount(), 0);
+  });
+
+  it('reads the footer text, licence and credit', () => {
+    writeConfig(
+      [
+        'footer:',
+        '  text: "  © {year} [Jane](https://example.com)  "',
+        '  license: cc-by-sa-4.0',
+        '  credit: false',
+        '',
+      ].join('\n'),
+    );
+    const config = loadCourseConfig(tmpDir);
+    assert.deepEqual(config.footer, {
+      text: '© {year} [Jane](https://example.com)',
+      license: 'CC-BY-SA-4.0',
+      credit: false,
+    });
+    assert.equal(warnMock.mock.callCount(), 0);
+  });
+
+  // Unset means the default notice; empty means the author wants none. That
+  // is why footer.text does not go through readText.
+  it('reads an empty footer text as no notice', () => {
+    writeConfig('footer:\n  text: ""\n');
+    assert.equal(loadCourseConfig(tmpDir).footer.text, '');
+    assert.equal(warnMock.mock.callCount(), 0);
+  });
+
+  it('reads license: none as no button, without warning', () => {
+    writeConfig('footer:\n  license: None\n');
+    assert.equal(loadCourseConfig(tmpDir).footer.license, null);
+    assert.equal(warnMock.mock.callCount(), 0);
+  });
+
+  it('warns and shows no button for an unknown licence', () => {
+    writeConfig('footer:\n  license: CC-BY-3.0\n');
+    const config = loadCourseConfig(tmpDir);
+    assert.equal(config.footer.license, null);
+    assert.equal(warnMock.mock.callCount(), 1);
+    assert.match(
+      warnMock.mock.calls[0].arguments[0],
+      /Ignoring "footer\.license" in course\.config\.yml: unknown licence "CC-BY-3\.0"/,
+    );
+  });
+
+  it('warns and keeps the credit on for a non-boolean footer.credit', () => {
+    writeConfig('footer:\n  credit: "false"\n');
+    assert.equal(loadCourseConfig(tmpDir).footer.credit, true);
+    assert.equal(warnMock.mock.callCount(), 1);
+    assert.match(
+      warnMock.mock.calls[0].arguments[0],
+      /Ignoring "footer\.credit".*expected true or false/,
+    );
+  });
+
+  it('warns and keeps the defaults for a footer that is not a mapping, or a non-string text', () => {
+    writeConfig('footer: "© me"\n');
+    assert.equal(loadCourseConfig(tmpDir).footer.text, 'Copyright © {year}');
+    _clearCache();
+    writeConfig('footer:\n  text: [a, b]\n  colour: red\n');
+    assert.equal(loadCourseConfig(tmpDir).footer.text, 'Copyright © {year}');
+    const messages = warnMock.mock.calls.map((call) => call.arguments[0]);
+    assert.equal(messages.length, 3);
+    assert.match(messages[0], /Ignoring "footer".*expected a mapping/);
+    assert.match(messages[1], /unknown key "footer\.colour"/);
+    assert.match(messages[2], /Ignoring "footer\.text".*expected a string/);
+  });
+
   it('throws on malformed YAML', () => {
     writeConfig('language: [unclosed\n');
     assert.throws(

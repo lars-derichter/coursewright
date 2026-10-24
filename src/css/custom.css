@@ -645,3 +645,28 @@ article {
   font-size: 0.95rem;
   max-width: 46rem;
 }
+
+/* ---------------------------------------------------------------------------
+   Footer
+
+   The line comes from `footer:` in course.config.yml (lib/config/footer.js).
+   A link in it would take --ifm-link-color, which is chosen for the page and
+   can vanish against the footer's background, so it takes the footer's own
+   text colour instead and keeps its underline. The licence button is shown at
+   the 88×31 size the Creative Commons press kit files it under; a badge in
+   the author's notice keeps its own size.
+   --------------------------------------------------------------------------- */
+
+.footer__copyright a,
+.footer__copyright a:hover {
+  color: inherit;
+}
+
+.footer__copyright img {
+  vertical-align: middle;
+}
+
+.footer__copyright a[rel='license'] img {
+  height: 31px;
+  width: auto;
+}

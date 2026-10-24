@@ -168,9 +168,9 @@ update.
 
 Override groups and keys: `alerts` (`note`, `tip`, `important`, `warning`,
 `caution`, `check`), `cards` (`external_url`, `file`), `export` (`attachment`,
-`online`, `course_title`, `selection_title`), `pull` (`untitled`), and
-`glossary` (`title`, `intro`, `operators`, `terms`). When the file or a key is
-missing, English is used.
+`online`, `course_title`, `selection_title`), `pull` (`untitled`), `glossary`
+(`title`, `intro`, `operators`, `terms`), and `site` (`credit`, `license`, the
+website footer). When the file or a key is missing, English is used.
 
 After changing the language or a label, re-push modules whose pages contain
 alerts (`npx course push`) and regenerate glossary pages

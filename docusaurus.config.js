@@ -9,12 +9,14 @@ const remarkReferenceItem = require('./src/plugins/remark-reference-item');
 const remarkHtmlLinks = require('./src/plugins/remark-html-links');
 const { loadCourseConfig } = require('./lib/config/course-config');
 const { loadTheme } = require('./lib/config/theme');
+const { renderFooterHtml } = require('./lib/config/footer');
 
 // The course title names the site and its navbar. Course language drives the
 // site locale (Docusaurus theme chrome ships translations) and every label the
 // remark plugins render. All of it comes from course.config.yml, which upstream
 // updates never overwrite — unlike this file.
-const { title, tagline, language, labels } = loadCourseConfig(__dirname);
+const { title, tagline, language, labels, footer } =
+  loadCourseConfig(__dirname);
 
 // The selected theme declares the --cw-* colour and font tokens that
 // custom.css maps onto Infima's variables, so it has to load first.
@@ -22,18 +24,32 @@ const themeCss =
   './' +
   path.relative(__dirname, loadTheme(__dirname).file).split(path.sep).join('/');
 
+// The deploy workflow passes the site's public address in from GitHub Pages,
+// which knows it for whatever repository the build runs in, so nothing has to
+// be written into this file per course. A local build keeps the placeholders;
+// they only surface in absolute URLs such as the sitemap's.
+const url = process.env.CW_SITE_URL || 'https://example.com';
+const baseUrl = process.env.CW_BASE_URL || '/';
+
+// The footer line comes from `footer:` in course.config.yml. Docusaurus inserts
+// it as raw HTML, so the renderer prefixes the licence button's path with the
+// baseUrl itself. A course that switches every part off gets no footer at all
+// rather than an empty bar.
+const footerHtml = renderFooterHtml(
+  footer,
+  labels,
+  baseUrl,
+  new Date().getFullYear(),
+);
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title,
   tagline,
   favicon: 'img/favicon.ico',
 
-  // The deploy workflow passes the site's public address in from GitHub Pages,
-  // which knows it for whatever repository the build runs in, so nothing has to
-  // be written into this file per course. A local build keeps the placeholders;
-  // they only surface in absolute URLs such as the sitemap's.
-  url: process.env.CW_SITE_URL || 'https://example.com',
-  baseUrl: process.env.CW_BASE_URL || '/',
+  url,
+  baseUrl,
 
   onBrokenLinks: 'throw',
 
@@ -97,10 +113,7 @@ const config = {
         title,
         items: [],
       },
-      footer: {
-        style: 'dark',
-        copyright: `Copyright © ${new Date().getFullYear()}`,
-      },
+      footer: footerHtml ? { style: 'dark', copyright: footerHtml } : undefined,
       prism: {
         theme: require('prism-react-renderer').themes.oneDark,
         additionalLanguages: ['java'],

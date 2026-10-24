@@ -1,4 +1,4 @@
-const { describe, it } = require('node:test');
+const { describe, it, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -76,6 +76,54 @@ describe('docusaurus.config.js remark plugins', () => {
     );
     assert.equal(typeof entry[1].cards.quiz, 'string');
     assert.equal(typeof entry[1].reference.notice, 'string');
+  });
+});
+
+describe('docusaurus.config.js footer', () => {
+  // The footer values are pinned here rather than read from course.config.yml,
+  // which a course author owns: a course that switches the credit off must
+  // still pass npm test. Parsing the block is course-config.test.js's job.
+  const courseConfig = require('../../lib/config/course-config');
+
+  function loadWithFooter(footer, env) {
+    const real = courseConfig.loadCourseConfig;
+    const stub = mock.method(courseConfig, 'loadCourseConfig', (root) => ({
+      ...real(root),
+      footer,
+    }));
+    try {
+      return loadConfig(env);
+    } finally {
+      stub.mock.restore();
+    }
+  }
+
+  it('carries the Coursewright credit link', () => {
+    const config = loadWithFooter({
+      text: 'Copyright © {year}',
+      license: null,
+      credit: true,
+    });
+    assert.match(
+      config.themeConfig.footer.copyright,
+      /<a href="https:\/\/github\.com\/lars-derichter\/coursewright">Coursewright<\/a>/,
+    );
+  });
+
+  it('prefixes the licence button with the baseUrl', () => {
+    const config = loadWithFooter(
+      { text: '', license: 'CC-BY-NC-SA-4.0', credit: false },
+      { baseUrl: '/my-course/' },
+    );
+    assert.match(
+      config.themeConfig.footer.copyright,
+      /src="\/my-course\/img\/licenses\/by-nc-sa\.svg"/,
+    );
+  });
+
+  it('leaves the footer out when every part is switched off', () => {
+    const config = loadWithFooter({ text: '', license: null, credit: false });
+    assert.equal(config.themeConfig.footer, undefined);
   });
 });
 
