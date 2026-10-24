@@ -110,14 +110,14 @@ describe('docusaurus.config.js footer', () => {
     );
   });
 
-  it('prefixes the licence button with the baseUrl', () => {
+  it('loads the licence button from the Creative Commons mirror', () => {
     const config = loadWithFooter(
       { text: '', license: 'CC-BY-NC-SA-4.0', credit: false },
       { baseUrl: '/my-course/' },
     );
     assert.match(
       config.themeConfig.footer.copyright,
-      /src="\/my-course\/img\/licenses\/by-nc-sa\.svg"/,
+      /src="https:\/\/mirrors\.creativecommons\.org\/presskit\/buttons\/88x31\/svg\/by-nc-sa\.svg"/,
     );
   });
 

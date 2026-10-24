@@ -1,9 +1,8 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 
 const {
+  BUTTON_BASE_URL,
   COURSEWRIGHT_URL,
   LICENSES,
   findLicense,
@@ -24,14 +23,9 @@ function footer(overrides) {
 }
 
 describe('LICENSES', () => {
-  // A button the table names but static/ lacks would 404 on every page.
-  it('has a bundled button for every licence', () => {
+  it('names a press-kit button for every licence', () => {
     for (const [id, { slug }] of Object.entries(LICENSES)) {
-      const file = path.resolve(
-        __dirname,
-        `../../static/img/licenses/${slug}.svg`,
-      );
-      assert.ok(fs.existsSync(file), `${id}: ${file} is missing`);
+      assert.match(slug, /^(by(-nc)?(-sa|-nd)?|cc-zero)$/, id);
     }
   });
 
@@ -52,7 +46,7 @@ describe('LICENSES', () => {
 
 describe('renderFooterHtml', () => {
   it('substitutes the year in the notice', () => {
-    const html = renderFooterHtml(footer({ credit: false }), en, '/', 2031);
+    const html = renderFooterHtml(footer({ credit: false }), en, 2031);
     assert.equal(html, 'Copyright © 2031');
   });
 
@@ -63,38 +57,31 @@ describe('renderFooterHtml', () => {
         credit: false,
       }),
       en,
-      '/',
       2031,
     );
     assert.equal(html, '© 2031 <a href="https://example.com">Jane Doe</a>');
   });
 
-  it('prefixes the licence button with the baseUrl and links its deed', () => {
+  it('takes the licence button from the press-kit mirror and links its deed', () => {
     const html = renderFooterHtml(
       footer({ text: '', license: 'CC-BY-NC-SA-4.0', credit: false }),
       en,
-      '/my-course/',
       2031,
     );
     assert.equal(
       html,
       '<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="license">' +
-        '<img src="/my-course/img/licenses/by-nc-sa.svg" ' +
+        `<img src="${BUTTON_BASE_URL}by-nc-sa.svg" ` +
         'alt="Licensed under CC BY-NC-SA 4.0"></a>',
     );
   });
 
   it('adds the credit by default and joins the parts with a middle dot', () => {
-    const html = renderFooterHtml(
-      footer({ license: 'CC0-1.0' }),
-      en,
-      '/',
-      2031,
-    );
+    const html = renderFooterHtml(footer({ license: 'CC0-1.0' }), en, 2031);
     const parts = html.split(' · ');
     assert.equal(parts.length, 3);
     assert.equal(parts[0], 'Copyright © 2031');
-    assert.match(parts[1], /img\/licenses\/cc-zero\.svg/);
+    assert.match(parts[1], /\/88x31\/svg\/cc-zero\.svg/);
     assert.equal(
       parts[2],
       `Made with <a href="${COURSEWRIGHT_URL}">Coursewright</a>`,
@@ -102,7 +89,7 @@ describe('renderFooterHtml', () => {
   });
 
   it('leaves the credit out when it is switched off', () => {
-    const html = renderFooterHtml(footer({ credit: false }), en, '/', 2031);
+    const html = renderFooterHtml(footer({ credit: false }), en, 2031);
     assert.doesNotMatch(html, /Coursewright/);
   });
 
@@ -110,19 +97,13 @@ describe('renderFooterHtml', () => {
     const html = renderFooterHtml(
       footer({ text: '', credit: false }),
       en,
-      '/',
       2031,
     );
     assert.equal(html, '');
   });
 
   it('uses the Dutch labels for a Dutch course', () => {
-    const html = renderFooterHtml(
-      footer({ license: 'CC-BY-4.0' }),
-      nl,
-      '/',
-      2031,
-    );
+    const html = renderFooterHtml(footer({ license: 'CC-BY-4.0' }), nl, 2031);
     assert.match(html, /alt="Gepubliceerd onder CC BY 4\.0"/);
     assert.match(html, /Gemaakt met <a href="[^"]+">Coursewright<\/a>/);
   });
@@ -137,7 +118,6 @@ describe('renderFooterHtml', () => {
     const html = renderFooterHtml(
       footer({ text: '', license: 'CC-BY-4.0' }),
       labels,
-      '/',
       2031,
     );
     assert.match(html, /alt="&quot;CC BY 4\.0&quot;"/);

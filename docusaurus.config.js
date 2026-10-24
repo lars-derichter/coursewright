@@ -24,23 +24,9 @@ const themeCss =
   './' +
   path.relative(__dirname, loadTheme(__dirname).file).split(path.sep).join('/');
 
-// The deploy workflow passes the site's public address in from GitHub Pages,
-// which knows it for whatever repository the build runs in, so nothing has to
-// be written into this file per course. A local build keeps the placeholders;
-// they only surface in absolute URLs such as the sitemap's.
-const url = process.env.CW_SITE_URL || 'https://example.com';
-const baseUrl = process.env.CW_BASE_URL || '/';
-
-// The footer line comes from `footer:` in course.config.yml. Docusaurus inserts
-// it as raw HTML, so the renderer prefixes the licence button's path with the
-// baseUrl itself. A course that switches every part off gets no footer at all
-// rather than an empty bar.
-const footerHtml = renderFooterHtml(
-  footer,
-  labels,
-  baseUrl,
-  new Date().getFullYear(),
-);
+// The footer line comes from `footer:` in course.config.yml. A course that
+// switches every part off gets no footer at all rather than an empty bar.
+const footerHtml = renderFooterHtml(footer, labels, new Date().getFullYear());
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -48,8 +34,12 @@ const config = {
   tagline,
   favicon: 'img/favicon.ico',
 
-  url,
-  baseUrl,
+  // The deploy workflow passes the site's public address in from GitHub Pages,
+  // which knows it for whatever repository the build runs in, so nothing has to
+  // be written into this file per course. A local build keeps the placeholders;
+  // they only surface in absolute URLs such as the sitemap's.
+  url: process.env.CW_SITE_URL || 'https://example.com',
+  baseUrl: process.env.CW_BASE_URL || '/',
 
   onBrokenLinks: 'throw',
 

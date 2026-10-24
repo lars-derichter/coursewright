@@ -31,17 +31,21 @@ repository's licences.
   in the `thomas-more` export style, a worked example of institutional branding.
 - The colours in `src/css/themes/thomas-more.css` are Thomas More's, in the
   theme of the same name.
-- `static/img/licenses/*.svg`: the 88×31 licence buttons from the
+
+## Images Referenced but Not Bundled
+
+- The licence button in the site footer (`footer.license` in
+  `course.config.yml`) is one of the 88×31 buttons of the
   [Creative Commons press kit](https://creativecommons.org/mission/downloads/),
-  downloaded from `mirrors.creativecommons.org/presskit/buttons/88x31/svg/` and
-  bundled unmodified. They are Creative Commons trademarks, which are not under
-  a Creative Commons licence. The
+  loaded at runtime from
+  `mirrors.creativecommons.org/presskit/buttons/88x31/svg/`. The buttons are
+  Creative Commons trademarks, not under a Creative Commons licence, and the
   [Creative Commons trademark policy](https://creativecommons.org/policies/#trademark)
-  licenses the button marks on the condition that a button is used "solely to
-  describe the Creative Commons legal tool that applies to a particular work"
-  and links to the relevant deed, and allows no modified version. The site
-  footer shows one only as `footer.license` sets it and always links it to the
-  deed. Do not edit, recolour or reuse these files for anything else.
+  asks that the images come directly from Creative Commons, which is why this
+  repository ships no copy. It licenses a button on the condition that it is
+  used "solely to describe the Creative Commons legal tool that applies to a
+  particular work" and links to the relevant deed; the footer always links it to
+  the deed.
 
 ## Fonts Referenced but Not Bundled
 

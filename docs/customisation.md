@@ -303,10 +303,11 @@ The line has up to three parts, in this order:
   licence's deed. It takes an SPDX identifier: `CC-BY-4.0`, `CC-BY-SA-4.0`,
   `CC-BY-NC-4.0`, `CC-BY-NC-SA-4.0`, `CC-BY-ND-4.0`, `CC-BY-NC-ND-4.0` or
   `CC0-1.0`. Left out or set to `none`, there is no button; an identifier not on
-  that list is ignored with a warning. The buttons ship in
-  `static/img/licenses/`, so the site makes no request to Creative Commons for
-  them. They are Creative Commons trademarks, used under the terms
-  [THIRD-PARTY.md](../THIRD-PARTY.md) records.
+  that list is ignored with a warning. The button loads from the Creative
+  Commons press-kit mirror, `mirrors.creativecommons.org`, so a visitor's
+  browser fetches it from there; this repository ships no copy. Offline, the
+  preview shows the button's alternative text instead.
+  [THIRD-PARTY.md](../THIRD-PARTY.md) records the trademark terms.
 - **`credit`** is the "Made with Coursewright" link to the Coursewright project.
   It is on unless you set it to `false`.
 

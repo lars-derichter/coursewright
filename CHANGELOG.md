@@ -19,14 +19,15 @@
   with `{year}` for the year of the build), a Creative Commons licence button
   linking to its deed (`license`, an SPDX identifier such as `CC-BY-NC-SA-4.0`),
   and a "Made with Coursewright" link to the project (`credit`). The buttons
-  ship in `static/img/licenses/`, so the site makes no request to Creative
-  Commons. The footer is the website's alone: exports and Canvas do not carry
-  it. The template's `course.config.yml` sets `license: CC-BY-NC-SA-4.0` to
-  match `course/LICENSE.md`. An existing course keeps its own
-  `course.config.yml`, which has no `footer:` block, so its next build shows the
-  same copyright line plus the new credit, and no button. To drop the credit,
-  add `footer:` with `credit: false`; to show the button, add `license:` with
-  the identifier of the licence in your `course/LICENSE.md`.
+  load from the Creative Commons press-kit mirror rather than shipping with the
+  template, because they are Creative Commons trademarks. The footer is the
+  website's alone: exports and Canvas do not carry it. The template's
+  `course.config.yml` sets `license: CC-BY-NC-SA-4.0` to match
+  `course/LICENSE.md`. An existing course keeps its own `course.config.yml`,
+  which has no `footer:` block, so its next build shows the same copyright line
+  plus the new credit, and no button. To drop the credit, add `footer:` with
+  `credit: false`; to show the button, add `license:` with the identifier of the
+  licence in your `course/LICENSE.md`.
   [The Site Footer](docs/customisation.md#the-site-footer) has the details.
 
 - `npx course setup` asks for the website footer's notice and licence, after the
