@@ -117,16 +117,17 @@ function yamlScalar(value) {
  * Set a top-level scalar key, keeping the file's comments and layout.
  *
  * Replaces the key where it is already set, uncomments it where it ships
- * commented out (`# tagline: ...`), and appends it otherwise. The commented
- * form deliberately only matches a top-level `# key:` with at most one space,
- * so it never picks up an indented key inside the commented `labels:` block.
+ * commented out (`# tagline: ...`), and appends it otherwise. Both forms
+ * match at column 0 only, so neither picks up a nested key of the same name:
+ * `labels.glossary.title`, active or inside the commented `labels:` block,
+ * is not the course title.
  */
 function setScalar(source, key, value) {
   const rendered = `${key}: ${yamlScalar(value)}`;
 
-  const active = new RegExp(`^([ \\t]*)${key}:[^\\n]*$`, 'm');
+  const active = new RegExp(`^${key}:[^\\n]*$`, 'm');
   if (active.test(source)) {
-    return source.replace(active, (_match, indent) => `${indent}${rendered}`);
+    return source.replace(active, rendered);
   }
 
   const commented = new RegExp(`^#[ \\t]?${key}:[^\\n]*$`, 'm');

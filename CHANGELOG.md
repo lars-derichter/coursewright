@@ -42,6 +42,13 @@
   stops with an error naming the valid identifiers on anything else. The summary
   line after the run names the licence.
 
+- `npx course setup` writes the course `title`, `tagline`, `language` and
+  `theme` at the top level of `course.config.yml` only. It used to rewrite the
+  first line that set the key at any indentation, so a course with an active
+  `labels:` block that overrides `glossary.title` and sits above the top-level
+  `title:` had its glossary heading replaced by the course name, and the course
+  name left as it was. Nested keys are now left alone.
+
 ## 1.5.4 (2026-10-24)
 
 - The dependencies are upgraded: dotenv to 18, `@vscode/vsce` to 4, and

@@ -106,6 +106,22 @@ describe('setScalar', () => {
     assert.match(out, /^title: Programming Fundamentals$/m);
   });
 
+  it('never touches a nested key in an active labels block', () => {
+    const source =
+      'labels:\n  glossary:\n    title: Terminology\n\ntitle: Old Name\n';
+    const out = setScalar(source, 'title', 'New Name');
+    assert.match(out, /^ {4}title: Terminology$/m);
+    assert.match(out, /^title: New Name$/m);
+    assert.doesNotMatch(out, /Old Name/);
+  });
+
+  it('appends the key when only a nested key of that name is set', () => {
+    const source = 'labels:\n  glossary:\n    title: Terminology\n';
+    const out = setScalar(source, 'title', 'New Name');
+    assert.match(out, /^ {4}title: Terminology$/m);
+    assert.match(out, /^title: New Name$/m);
+  });
+
   it('keeps every comment in the file', () => {
     const comments = (text) =>
       text.split('\n').filter((l) => l.startsWith('#'));
