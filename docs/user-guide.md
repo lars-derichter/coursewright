@@ -457,7 +457,7 @@ engine with one decision taken out of your hands.
 ```bash
 npx course sync                   # two-way; the newest change wins; deletes nothing
 npx course sync --dry-run         # the same run, reported instead of carried out
-npx course sync -m 01-intro       # only these module folders (repeatable)
+npx course sync -m 01-intro       # only these modules: a folder, 01, 01-03 or 01,03
 npx course sync --conflict local  # who wins when both sides changed one item
 npx course sync --order canvas    # who wins when both sides reordered a module
 npx course sync --prune           # also delete on both sides; counts them and asks
@@ -471,9 +471,9 @@ npx course status                 # what a sync would do; neither side is writte
 npx course validate               # check course content for errors before pushing
 ```
 
-All three writing commands take `--dry-run`. `-m` scopes any of the four to
-named module folders; on `sync`, `pull` and `status` it is repeatable
-(`-m 01-intro -m 02-html`), on `push` it takes one folder.
+All three writing commands take `--dry-run`. `-m` scopes any of the four to the
+modules it names, by folder name, number, range or list, as many as you like
+(`-m 01-intro 03-05`).
 
 A prune flag, `--conflict`, `--order` and `pull --force` are terminal-only:
 neither the panel nor the palette has a route to any of them, so a run that

@@ -57,6 +57,18 @@
   word. A module and item paths never combined in one export. The VS Code
   extension passes a full folder name and is unaffected.
 
+- `sync -m`, `push -m`, `pull -m` and `status -m` take modules by number too, in
+  the forms `export -m` takes: a folder name, a number (`-m 03`), a range
+  (`-m 03-05`), a comma list (`-m 03,05`) or several values. `push -m` used to
+  take one folder name and no more; it now takes several modules, like the other
+  three. A number finds whatever the full folder name would: a module under
+  `course/`, one only the sync state remembers, such as a module deleted here,
+  and on `sync`, `pull` and `status` a Canvas module not yet pulled. A number or
+  range that matches nothing, and a number two folders share, stop the run with
+  an error naming it. A full folder name works exactly as before, including the
+  refusal when nothing answers to it, so a script or the VS Code extension
+  passing one is unaffected.
+
 ## 1.6.0 (2026-10-24)
 
 - The tutorial's **Setting Up** pages say where Coursewright comes from. **What

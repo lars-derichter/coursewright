@@ -6,7 +6,12 @@ const {
   gitDirtyPaths,
 } = require('../lib/sync/gather');
 const { loadState, saveState } = require('../lib/sync/state');
-const { COURSE_DIR, createRL, prompt } = require('./module-utils');
+const {
+  COURSE_DIR,
+  createRL,
+  prompt,
+  resolveModuleFilter,
+} = require('./module-utils');
 const { BACKUP_DOC, confirmForcedPull } = require('./backup-warning');
 const { describeLocalPrune } = require('./prune-warning');
 const {
@@ -94,9 +99,6 @@ async function pull(options = {}) {
   const dryRun = options.dryRun === true;
   const force = options.force === true;
   const pruneLocal = options.pruneLocal === true;
-  const modules = options.module
-    ? [].concat(options.module).filter(Boolean)
-    : null;
   const courseDir = options.courseDir || COURSE_DIR;
   const syncFile = options.syncFile || undefined;
   const interactive =
@@ -220,7 +222,16 @@ async function pull(options = {}) {
 
   // Checked here rather than up front, because the folder a Canvas module will
   // be written into need not exist yet: `-m` may name one nothing but Canvas
-  // has heard of. So the answer needs both sides and the state that links them.
+  // has heard of. So the answer needs both sides and the state that links them,
+  // and so does a number standing in for that name.
+  let modules;
+  try {
+    modules = resolveModuleFilter(options.module, { local, state, canvas });
+  } catch (err) {
+    log.error(`[pull] Error: ${err.message}`);
+    process.exitCode = 1;
+    return;
+  }
   if (!checkModuleFilter(modules, { local, canvas, state, tag: 'pull' })) {
     process.exitCode = 1;
     return;

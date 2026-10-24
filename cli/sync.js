@@ -6,7 +6,12 @@ const {
   gitDirtyPaths,
 } = require('../lib/sync/gather');
 const { loadState, saveState } = require('../lib/sync/state');
-const { COURSE_DIR, createRL, prompt } = require('./module-utils');
+const {
+  COURSE_DIR,
+  createRL,
+  prompt,
+  resolveModuleFilter,
+} = require('./module-utils');
 const { BACKUP_HINT, submissionRiskSuffix } = require('./backup-warning');
 const { warnGradeImpact } = require('./grade-impact');
 const { describeCanvasPrune, describeLocalPrune } = require('./prune-warning');
@@ -239,9 +244,6 @@ async function sync(options = {}) {
   const wantsPruneCanvas =
     options.prune === true || options.pruneCanvas === true;
   const wantsPruneLocal = options.prune === true || options.pruneLocal === true;
-  const modules = options.module
-    ? [].concat(options.module).filter(Boolean)
-    : null;
   const courseDir = options.courseDir || COURSE_DIR;
   const syncFile = options.syncFile || undefined;
 
@@ -271,7 +273,16 @@ async function sync(options = {}) {
 
   // Checked once both sides are in hand, because sync writes both ways: `-m`
   // may name a module that exists only in Canvas and that this very run is
-  // about to write here for the first time.
+  // about to write here for the first time. A number is resolved against the
+  // same three sides, and only a name nothing answers to reaches the check.
+  let modules;
+  try {
+    modules = resolveModuleFilter(options.module, { local, state, canvas });
+  } catch (err) {
+    log.error(`[sync] Error: ${err.message}`);
+    process.exitCode = 1;
+    return;
+  }
   if (!checkModuleFilter(modules, { local, canvas, state, tag: 'sync' })) {
     process.exitCode = 1;
     return;

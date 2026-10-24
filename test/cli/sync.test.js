@@ -1140,51 +1140,83 @@ describe('npx course sync', () => {
       );
     });
 
-    it('accepts a module only Canvas has heard of', async () => {
-      // Sync writes both ways, so the name may belong to a folder that does not
-      // exist yet — push's local-only rule would refuse the very run that
-      // creates it. The union is what `pull` and `status` check against.
+    it('refuses a number neither side answers to', async () => {
       const out = silence();
       const { courseDir, file } = syncedFixture();
-      mockCanvas([
-        { method: 'GET', path: '/modules/10/items', body: [ITEM] },
-        { method: 'GET', path: '/modules/20/items', body: [] },
-        {
-          method: 'GET',
-          path: '/modules',
-          body: [
-            { id: 10, name: 'Intro', position: 1 },
-            { id: 20, name: 'Later', position: 2 },
-          ],
-        },
-        { method: 'GET', path: `/pages/${PAGE.url}`, body: PAGE },
-        {
-          method: 'GET',
-          path: '/pages',
-          body: [
-            {
-              page_id: PAGE.page_id,
-              url: PAGE.url,
-              title: PAGE.title,
-              updated_at: PAGE.updated_at,
-            },
-          ],
-        },
-      ]);
+      const calls = mockCanvas(readRoutes());
 
       await sync({
         courseDir,
         syncFile: file,
         gitDirty: CLEAN,
         interactive: false,
-        module: '02-later',
+        module: '09',
       });
 
-      assert.doesNotMatch(
+      assert.deepEqual(writes(calls), [], 'a refused run writes nothing');
+      assert.equal(process.exitCode, 1);
+      assert.match(
         out.error.mock.calls.map((call) => call.arguments.join(' ')).join('\n'),
-        /no module named/,
+        /\[sync\] Error: Module not found: 09/,
       );
     });
+
+    for (const [how, selector] of [
+      ['by folder name', '02-later'],
+      ['by number', '02'],
+    ]) {
+      it(`accepts a module only Canvas has heard of (${how})`, async () => {
+        // Sync writes both ways, so the name may belong to a folder that does not
+        // exist yet — push's local-only rule would refuse the very run that
+        // creates it. The union is what `pull` and `status` check against.
+        const out = silence();
+        const { courseDir, file } = syncedFixture();
+        mockCanvas([
+          { method: 'GET', path: '/modules/10/items', body: [ITEM] },
+          { method: 'GET', path: '/modules/20/items', body: [] },
+          {
+            method: 'GET',
+            path: '/modules',
+            body: [
+              { id: 10, name: 'Intro', position: 1 },
+              { id: 20, name: 'Later', position: 2 },
+            ],
+          },
+          { method: 'GET', path: `/pages/${PAGE.url}`, body: PAGE },
+          {
+            method: 'GET',
+            path: '/pages',
+            body: [
+              {
+                page_id: PAGE.page_id,
+                url: PAGE.url,
+                title: PAGE.title,
+                updated_at: PAGE.updated_at,
+              },
+            ],
+          },
+        ]);
+
+        await sync({
+          courseDir,
+          syncFile: file,
+          gitDirty: CLEAN,
+          interactive: false,
+          module: selector,
+        });
+
+        assert.doesNotMatch(
+          out.error.mock.calls
+            .map((call) => call.arguments.join(' '))
+            .join('\n'),
+          /no module named|Module not found/,
+        );
+        assert.ok(
+          fs.existsSync(path.join(courseDir, '02-later', '_category_.json')),
+          'the Canvas-only module is written here, so the filter reached it',
+        );
+      });
+    }
   });
 });
 

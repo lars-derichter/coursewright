@@ -77,7 +77,10 @@ program
   .command('sync')
   .description('Two-way sync with Canvas: newest wins, nothing is deleted')
   .option('--dry-run', 'Show what would happen without writing anything')
-  .option('-m, --module <name...>', 'Only sync these module folder names')
+  .option(
+    '-m, --module <module...>',
+    'Only sync these modules: a folder name, a number (03), a range (03-05) or a list (03,05)',
+  )
   .option('--prune-canvas', 'Delete Canvas items and modules gone locally')
   .option('--prune-local', 'Delete local files and folders gone from Canvas')
   .option('--prune', 'Both --prune-canvas and --prune-local')
@@ -100,7 +103,10 @@ program
 program
   .command('push')
   .description('Push local course content to Canvas')
-  .option('-m, --module <name>', 'Only push a specific module folder name')
+  .option(
+    '-m, --module <module...>',
+    'Only push these modules: a folder name, a number (03), a range (03-05) or a list (03,05)',
+  )
   .option('--dry-run', 'Show what would happen without writing to Canvas')
   .option(
     '--prune-canvas',
@@ -114,7 +120,10 @@ program
 program
   .command('pull')
   .description('Pull course content from Canvas into local markdown files')
-  .option('-m, --module <name...>', 'Only pull these module folder names')
+  .option(
+    '-m, --module <module...>',
+    'Only pull these modules: a folder name, a number (03), a range (03-05) or a list (03,05)',
+  )
   .option('--dry-run', 'Show what would happen without writing anything')
   .option(
     '--prune-local',
@@ -129,7 +138,10 @@ program
 program
   .command('status')
   .description('Show what a sync would do, without writing anything')
-  .option('-m, --module <name...>', 'Only report on these module folder names')
+  .option(
+    '-m, --module <module...>',
+    'Only report on these modules: a folder name, a number (03), a range (03-05) or a list (03,05)',
+  )
   .action(require('./status'));
 
 program

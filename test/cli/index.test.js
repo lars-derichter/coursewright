@@ -92,6 +92,17 @@ describe('the CLI command table', () => {
   });
 });
 
+describe('-m on the four sync commands', () => {
+  it('takes several modules on each, push included', () => {
+    // Push took one folder name, for no reason but the reference table saying
+    // so; the command itself always read a list.
+    for (const name of ['sync', 'push', 'pull', 'status']) {
+      const block = source.split(`.command('${name}')`)[1].split('.action(')[0];
+      assert.match(block, /'-m, --module <module\.\.\.>'/, name);
+    }
+  });
+});
+
 describe('the VS Code extension against the CLI', () => {
   it('calls no command the CLI does not register', () => {
     // A palette entry pointing at a command that no longer exists is a runtime

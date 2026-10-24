@@ -8,14 +8,19 @@ themselves, the website, the exports, the Canvas sync, and the AI assistants.
 ### "no module named" and "Module not found"
 
 What `--module` (`-m`) takes is the folder name under `course/`, numeric prefix
-included, not the title Canvas shows. Three messages come back for the same
-typo, because three sets of commands answer the question differently:
+included, not the title Canvas shows. `sync`, `push`, `pull`, `status`, `export`
+and `export-toc` also take the number alone (`-m 01`), a range or a list. Three
+messages come back for the same typo, because three sets of commands answer the
+question differently:
 
 ```text
 [status] Error: no module named 01-introduction — nothing under course/ and nothing in the Canvas course answers to it.
 [push] Error: no module folder named 01-introduction under course/.
 [new-item] Error: Module not found: 01-introduction
 ```
+
+A number or range that matches no module is caught before any of that, by every
+command that takes one, as `Module not found: 09` or `No module in range 09-11`.
 
 `sync`, `pull` and `status` read both sides, so they accept a module that exists
 only in Canvas and only refuse a name neither side answers to. Push writes from

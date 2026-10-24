@@ -161,16 +161,29 @@ function folderPrefix(folderName) {
  * pass folders that exist only in the sync state. Pure: no filesystem, no
  * logging, so a failure is a thrown Error for the caller to report its own way.
  *
+ * `passUnknownNames` is for the sync commands, which had a refusal of their own
+ * for an unknown name long before this existed, worded for their own sides
+ * (`checkModuleFilter` in `cli/report.js`, and push's local-only check). An
+ * unknown name is handed back for that refusal to name, rather than refused
+ * here in other words. A number or a range matching nothing is still an error
+ * here: no folder is called `03`, so there is nothing to hand on.
+ *
  * @param {string|string[]} selectors - The raw `-m` values.
  * @param {string[]} folderNames - Every module folder to choose from. Their order
  *   breaks ties between folders with the same prefix.
  * @param {object} [options]
  * @param {boolean} [options.single] - Refuse a selection of more than one module.
+ * @param {boolean} [options.passUnknownNames] - Return a name that matches no
+ *   folder as it was typed, after the matches, instead of throwing.
  * @returns {string[]} The matching folder names, in prefix order, each once.
  * @throws {Error} On an unknown token, an empty range, a backwards range, an
  *   ambiguous number, or (with `single`) more than one match.
  */
-function resolveModuleSelectors(selectors, folderNames, { single } = {}) {
+function resolveModuleSelectors(
+  selectors,
+  folderNames,
+  { single, passUnknownNames } = {},
+) {
   const tokens = []
     .concat(selectors || [])
     .flatMap((s) => String(s).split(','))
@@ -185,6 +198,7 @@ function resolveModuleSelectors(selectors, folderNames, { single } = {}) {
     });
 
   const picked = new Set();
+  const unknown = new Set();
   for (const token of tokens) {
     if (folderNames.includes(token)) {
       picked.add(token);
@@ -227,6 +241,10 @@ function resolveModuleSelectors(selectors, folderNames, { single } = {}) {
           'argument after it as one.',
       );
     }
+    if (passUnknownNames) {
+      unknown.add(token);
+      continue;
+    }
     throw new Error(`Module not found: ${token}`);
   }
 
@@ -235,7 +253,8 @@ function resolveModuleSelectors(selectors, folderNames, { single } = {}) {
   const rank = (f) => folderPrefix(f) ?? Infinity;
   const result = folderNames
     .filter((f) => picked.has(f))
-    .sort((a, b) => rank(a) - rank(b));
+    .sort((a, b) => rank(a) - rank(b))
+    .concat([...unknown]);
 
   if (single && result.length > 1) {
     throw new Error(
@@ -244,6 +263,66 @@ function resolveModuleSelectors(selectors, folderNames, { single } = {}) {
     );
   }
   return result;
+}
+
+/**
+ * Every folder `-m` can name in a sync command: the module folders under
+ * `course/`, the folders the sync state remembers, and the folder each Canvas
+ * module the state does not know yet would be written into.
+ *
+ * So a number reaches every module its full name already did. The state is in
+ * it because a module deleted here is still one the run reports on, as an
+ * orphan on Canvas that `sync --prune-canvas -m 03` deletes. The untracked
+ * Canvas modules are in it because a module made in the Canvas UI has no
+ * folder anywhere yet, and `pull -m 04` is what gives it one. A tracked Canvas
+ * module is left out, because its folder is already in the state, and its
+ * suggested folder differs from that one as soon as somebody renames it in
+ * Canvas: both in the list would make its number ambiguous. Push passes no
+ * `canvas`, since it reads the Canvas course only after this has been answered
+ * and never writes a Canvas-only module here anyway.
+ *
+ * In that order, each once, so a tie between two folders sharing a number
+ * lists the local one first.
+ *
+ * @param {object} sides
+ * @param {object} sides.local - `gatherLocal`'s answer.
+ * @param {object} sides.state - The loaded sync state.
+ * @param {object} [sides.canvas] - `gatherCanvas`'s answer.
+ * @returns {string[]}
+ */
+function moduleCandidates({ local, state, canvas }) {
+  const tracked = new Set(
+    Object.values((state && state.modules) || {})
+      .map((entry) => entry && entry.canvas_module_id)
+      .filter((id) => id != null),
+  );
+  const untracked = ((canvas && canvas.modules) || [])
+    .filter((mod) => !tracked.has(mod.canvasModuleId))
+    .map((mod) => mod.suggestedFolder);
+  return [
+    ...new Set([
+      ...((local && local.modules) || []).map((mod) => mod.folder),
+      ...Object.keys((state && state.modules) || {}),
+      ...untracked,
+    ]),
+  ].filter(Boolean);
+}
+
+/**
+ * The `-m` of `sync`, `push`, `pull` or `status`, resolved against
+ * `moduleCandidates`. Null without `-m`, so the planner reads the whole course,
+ * and an empty list for an `-m` given nothing, which it reads the same way, as
+ * it did before shorthand existed.
+ *
+ * @throws {Error} What `resolveModuleSelectors` throws, bar an unknown name.
+ */
+function resolveModuleFilter(option, sides) {
+  if (!option) return null;
+  const raw = [].concat(option).filter(Boolean);
+  if (raw.length === 0) return raw;
+  return resolveModuleSelectors(raw, moduleCandidates(sides), {
+    passUnknownNames: true,
+  });
 }
 
 /**
@@ -399,6 +478,8 @@ module.exports = {
   prompt,
   getExistingModules,
   resolveModuleSelectors,
+  moduleCandidates,
+  resolveModuleFilter,
   pad,
   MAX_SLUG_LENGTH,
   truncateSlug,

@@ -82,22 +82,39 @@ Two-way sync with Canvas: newest wins, nothing is deleted.
 npx course sync [options]
 ```
 
-| Flag                     | Description                                                                             |
-| ------------------------ | --------------------------------------------------------------------------------------- |
-| `--dry-run`              | Show what would happen without writing anything                                         |
-| `-m, --module <name...>` | Only sync these module folder names (repeatable: `-m 01-intro -m 02-html`)              |
-| `--prune-canvas`         | Delete Canvas items and modules gone locally                                            |
-| `--prune-local`          | Delete local files and folders gone from Canvas                                         |
-| `--prune`                | Both `--prune-canvas` and `--prune-local`                                               |
-| `--conflict <policy>`    | Who wins when both sides changed: `newest`, `local`, `canvas`, `ask` (default `newest`) |
-| `--order <policy>`       | Who wins when both sides reordered: `local`, `canvas`, `ask` (default `ask`)            |
-| `-y, --yes`              | Never ask: confirm a prune, and skip conflict and order questions                       |
+| Flag                       | Description                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| `--dry-run`                | Show what would happen without writing anything                                         |
+| `-m, --module <module...>` | Only sync these modules: a folder name, a number, a range or a list                     |
+| `--prune-canvas`           | Delete Canvas items and modules gone locally                                            |
+| `--prune-local`            | Delete local files and folders gone from Canvas                                         |
+| `--prune`                  | Both `--prune-canvas` and `--prune-local`                                               |
+| `--conflict <policy>`      | Who wins when both sides changed: `newest`, `local`, `canvas`, `ask` (default `newest`) |
+| `--order <policy>`         | Who wins when both sides reordered: `local`, `canvas`, `ask` (default `ask`)            |
+| `-y, --yes`                | Never ask: confirm a prune, and skip conflict and order questions                       |
 
 `--conflict` and `--order` only come up when both sides changed the same item or
 reordered the same module; see
 [Who wins when both sides moved](user-guide.md#who-wins-when-both-sides-moved).
 A prune only runs unattended with `-y`; without it, `sync --prune-canvas` in a
 script skips the deletion and reports it, it does not fail.
+
+`-m` takes the same four forms as it does for [`export`](#export), here and on
+`push`, `pull` and `status`:
+
+```bash
+npx course sync -m 03-css-basics   # a folder name
+npx course sync -m 03              # a number, the module whose folder starts 03
+npx course sync -m 03-05           # a range, every module from 03 to 05
+npx course sync -m 03,05           # a list, also written -m 03 05
+```
+
+A number finds whatever its full folder name would: besides the folders under
+`course/`, a module only the sync state remembers, such as one deleted here,
+and, except on `push`, a Canvas module not yet pulled. A number or range that
+matches nothing stops the run, and so does a number two folders share. A full
+folder name nothing answers to is refused as it always was; see
+[Troubleshooting](troubleshooting.md#no-module-named-and-module-not-found).
 
 ### `push`
 
@@ -107,12 +124,12 @@ Push local course content to Canvas.
 npx course push [options]
 ```
 
-| Flag                  | Description                                                      |
-| --------------------- | ---------------------------------------------------------------- |
-| `-m, --module <name>` | Only push a specific module folder name (single, not repeatable) |
-| `--dry-run`           | Show what would happen without writing to Canvas                 |
-| `--prune-canvas`      | Delete Canvas modules and items that no longer exist locally     |
-| `--prune`             | Gone: errors out and names `--prune-canvas`                      |
+| Flag                       | Description                                                         |
+| -------------------------- | ------------------------------------------------------------------- |
+| `-m, --module <module...>` | Only push these modules: a folder name, a number, a range or a list |
+| `--dry-run`                | Show what would happen without writing to Canvas                    |
+| `--prune-canvas`           | Delete Canvas modules and items that no longer exist locally        |
+| `--prune`                  | Gone: errors out and names `--prune-canvas`                         |
 
 `--prune` is not a silent alias: `push --prune` exits with an error pointing at
 `--prune-canvas`, because push only ever writes to one side, and the old flag
@@ -127,12 +144,12 @@ Pull course content from Canvas into local markdown files.
 npx course pull [options]
 ```
 
-| Flag                     | Description                                                    |
-| ------------------------ | -------------------------------------------------------------- |
-| `-m, --module <name...>` | Only pull these module folder names (repeatable)               |
-| `--dry-run`              | Show what would happen without writing anything                |
-| `--prune-local`          | Delete local files and folders that no longer exist in Canvas  |
-| `-f, --force`            | Write over local files that hold uncommitted or untracked work |
+| Flag                       | Description                                                         |
+| -------------------------- | ------------------------------------------------------------------- |
+| `-m, --module <module...>` | Only pull these modules: a folder name, a number, a range or a list |
+| `--dry-run`                | Show what would happen without writing anything                     |
+| `--prune-local`            | Delete local files and folders that no longer exist in Canvas       |
+| `-f, --force`              | Write over local files that hold uncommitted or untracked work      |
 
 `--force` switches off the git guard that otherwise protects a local file with
 uncommitted or untracked changes. Commit before you use it; see
@@ -146,9 +163,9 @@ Show what a sync would do, without writing anything.
 npx course status [options]
 ```
 
-| Flag                     | Description                                           |
-| ------------------------ | ----------------------------------------------------- |
-| `-m, --module <name...>` | Only report on these module folder names (repeatable) |
+| Flag                       | Description                                                              |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `-m, --module <module...>` | Only report on these modules: a folder name, a number, a range or a list |
 
 `status` reads Canvas on every run: there is no offline mode.
 
@@ -572,4 +589,4 @@ route through the sidebar or the palette:
 | `check-links` on its own, and its `--root`                                                                        | yes           |
 | `reset-canvas --dry-run`                                                                                          | yes           |
 | `new-item --position` and `new-module --position` (the panel appends; reorder afterwards with move or drag)       | yes           |
-| Multi-module `sync -m a -m b` (the panel only ever passes one module)                                             | yes           |
+| Multi-module `-m` on `sync`, `push`, `pull` or `status` (the panel only ever passes one module)                   | yes           |

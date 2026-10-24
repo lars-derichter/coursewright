@@ -10,7 +10,9 @@ const {
   UnanswerableError,
   ask,
   createRL,
+  moduleCandidates,
   prompt,
+  resolveModuleFilter,
   resolveModuleSelectors,
   toSlug,
   truncateSlug,
@@ -216,6 +218,126 @@ describe('resolveModuleSelectors', () => {
     it('accepts a range that yields one module', () => {
       assert.deepEqual(resolve(['04-05'], { single: true }), ['05-layout']);
     });
+  });
+});
+
+describe('resolveModuleSelectors with passUnknownNames', () => {
+  const folders = ['01-intro', '02-html', '03-css-basics'];
+  const resolve = (selectors) =>
+    resolveModuleSelectors(selectors, folders, { passUnknownNames: true });
+
+  it('hands an unknown name back, after the matches, as it was typed', () => {
+    assert.deepEqual(resolve(['99-nope', '02', '98-also-nope', '99-nope']), [
+      '02-html',
+      '99-nope',
+      '98-also-nope',
+    ]);
+  });
+
+  it('still refuses a number that matches nothing', () => {
+    assert.throws(() => resolve(['09']), /Module not found: 09/);
+  });
+
+  it('still refuses a range that matches nothing', () => {
+    assert.throws(() => resolve(['07-09']), /No module in range 07-09/);
+  });
+
+  it('still says a path is not a module', () => {
+    assert.throws(() => resolve(['course/01-intro']), /Not a module/);
+  });
+});
+
+describe('moduleCandidates', () => {
+  const local = (...folders) => ({
+    modules: folders.map((folder) => ({ folder })),
+  });
+  const state = (entries) => ({ modules: entries });
+
+  it('takes a folder only the tree has', () => {
+    assert.deepEqual(
+      moduleCandidates({ local: local('01-intro'), state: state({}) }),
+      ['01-intro'],
+    );
+  });
+
+  it('takes a folder only the sync state has', () => {
+    assert.deepEqual(
+      moduleCandidates({
+        local: local(),
+        state: state({ '03-deleted': { canvas_module_id: 30 } }),
+      }),
+      ['03-deleted'],
+    );
+  });
+
+  it('merges both, local first, each once', () => {
+    assert.deepEqual(
+      moduleCandidates({
+        local: local('01-intro', '02-html'),
+        state: state({
+          '02-html': { canvas_module_id: 20 },
+          '03-deleted': { canvas_module_id: 30 },
+        }),
+      }),
+      ['01-intro', '02-html', '03-deleted'],
+    );
+  });
+
+  it('takes the folder a Canvas module the state does not know would get', () => {
+    assert.deepEqual(
+      moduleCandidates({
+        local: local('01-intro'),
+        state: state({ '01-intro': { canvas_module_id: 10 } }),
+        canvas: {
+          modules: [
+            { canvasModuleId: 10, suggestedFolder: '01-intro' },
+            { canvasModuleId: 40, suggestedFolder: '04-new-in-canvas' },
+          ],
+        },
+      }),
+      ['01-intro', '04-new-in-canvas'],
+    );
+  });
+
+  it('leaves out a tracked Canvas module renamed in Canvas', () => {
+    // Its suggested folder is the new name; listed beside the state's folder,
+    // it would make `-m 01` ambiguous for a module that is only one.
+    assert.deepEqual(
+      moduleCandidates({
+        local: local('01-intro'),
+        state: state({ '01-intro': { canvas_module_id: 10 } }),
+        canvas: {
+          modules: [{ canvasModuleId: 10, suggestedFolder: '01-welcome' }],
+        },
+      }),
+      ['01-intro'],
+    );
+  });
+});
+
+describe('resolveModuleFilter', () => {
+  const sides = {
+    local: { modules: [{ folder: '01-intro' }] },
+    state: { modules: { '03-deleted': { canvas_module_id: 30 } } },
+  };
+
+  it('is null without -m, so the planner reads the whole course', () => {
+    assert.equal(resolveModuleFilter(undefined, sides), null);
+  });
+
+  it('leaves an -m given nothing empty, as it always was', () => {
+    assert.deepEqual(resolveModuleFilter([''], sides), []);
+  });
+
+  it('resolves a number against the state as well as the tree', () => {
+    assert.deepEqual(resolveModuleFilter(['3', '01'], sides), [
+      '01-intro',
+      '03-deleted',
+    ]);
+  });
+
+  it('passes an unknown name on for the command to refuse', () => {
+    assert.deepEqual(resolveModuleFilter('99-nope', sides), ['99-nope']);
   });
 });
 

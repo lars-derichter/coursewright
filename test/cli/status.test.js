@@ -600,34 +600,55 @@ describe('npx course status, when it cannot answer', () => {
     assert.equal(process.exitCode, 1);
   });
 
-  it('scopes the preview to the module -m names', async () => {
+  it('refuses a -m number neither side has heard of', async () => {
     const out = silence();
     const { courseDir, file } = syncedFixture();
-    fs.mkdirSync(path.join(courseDir, '02-later'), { recursive: true });
-    write(
-      courseDir,
-      '02-later/_category_.json',
-      '{ "label": "Later", "position": 2 }\n',
-    );
-    write(
-      courseDir,
-      '02-later/01-draft.md',
-      '---\ntitle: Draft\ncanvas_type: page\n---\n\nNot pushed yet.\n',
-    );
     mockCanvas(readRoutes());
 
     await status({
       courseDir,
       syncFile: file,
       gitDirty: CLEAN,
-      module: ['01-intro'],
+      module: ['09'],
     });
 
-    assert.match(
-      printed(out),
-      /Nothing to do/,
-      'the unsynced second module is out of scope, so there is nothing to say',
-    );
-    assert.equal(process.exitCode, 0);
+    assert.match(errored(out), /\[status\] Error: Module not found: 09/);
+    assert.equal(process.exitCode, 1);
   });
+
+  for (const [how, selector] of [
+    ['by folder name', ['01-intro']],
+    ['by number', ['1']],
+  ]) {
+    it(`scopes the preview to the module -m names (${how})`, async () => {
+      const out = silence();
+      const { courseDir, file } = syncedFixture();
+      fs.mkdirSync(path.join(courseDir, '02-later'), { recursive: true });
+      write(
+        courseDir,
+        '02-later/_category_.json',
+        '{ "label": "Later", "position": 2 }\n',
+      );
+      write(
+        courseDir,
+        '02-later/01-draft.md',
+        '---\ntitle: Draft\ncanvas_type: page\n---\n\nNot pushed yet.\n',
+      );
+      mockCanvas(readRoutes());
+
+      await status({
+        courseDir,
+        syncFile: file,
+        gitDirty: CLEAN,
+        module: selector,
+      });
+
+      assert.match(
+        printed(out),
+        /Nothing to do/,
+        'the unsynced second module is out of scope, so there is nothing to say',
+      );
+      assert.equal(process.exitCode, 0);
+    });
+  }
 });

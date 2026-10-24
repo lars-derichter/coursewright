@@ -9,7 +9,12 @@ const {
   gitDirtyPaths,
 } = require('../lib/sync/gather');
 const { loadState, saveState } = require('../lib/sync/state');
-const { COURSE_DIR, createRL, prompt } = require('./module-utils');
+const {
+  COURSE_DIR,
+  createRL,
+  prompt,
+  resolveModuleFilter,
+} = require('./module-utils');
 const {
   BACKUP_HINT,
   confirmFirstPush,
@@ -91,9 +96,6 @@ async function push(options = {}) {
 
   const dryRun = options.dryRun === true;
   const pruneCanvas = options.pruneCanvas === true;
-  const modules = options.module
-    ? [].concat(options.module).filter(Boolean)
-    : null;
   const courseDir = options.courseDir || COURSE_DIR;
   const syncFile = options.syncFile || undefined;
   const interactive =
@@ -135,6 +137,16 @@ async function push(options = {}) {
     return;
   }
 
+  // Resolved against the state as well as the tree, so a number names a module
+  // deleted here the way its full name does: as one push has no folder for.
+  let modules;
+  try {
+    modules = resolveModuleFilter(options.module, { local, state });
+  } catch (err) {
+    log.error(`[push] Error: ${err.message}`);
+    process.exitCode = 1;
+    return;
+  }
   if (modules) {
     const known = new Set(local.modules.map((mod) => mod.folder));
     const missing = modules.filter((name) => !known.has(name));

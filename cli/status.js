@@ -5,7 +5,7 @@ const {
   gitDirtyPaths,
 } = require('../lib/sync/gather');
 const { loadState } = require('../lib/sync/state');
-const { COURSE_DIR } = require('./module-utils');
+const { COURSE_DIR, resolveModuleFilter } = require('./module-utils');
 const { buildReport, checkModuleFilter } = require('./report');
 const log = require('./logger');
 
@@ -82,9 +82,6 @@ async function status(options = {}) {
     return;
   }
 
-  const modules = options.module
-    ? [].concat(options.module).filter(Boolean)
-    : null;
   const courseDir = options.courseDir || COURSE_DIR;
   const syncFile = options.syncFile || undefined;
 
@@ -121,6 +118,14 @@ async function status(options = {}) {
   // Checked once both sides are in hand, for pull's reason: a module `-m` names
   // may exist only in Canvas, and previewing what a sync would do with it is
   // exactly the kind of question worth scoping.
+  let modules;
+  try {
+    modules = resolveModuleFilter(options.module, { local, state, canvas });
+  } catch (err) {
+    log.error(`[status] Error: ${err.message}`);
+    process.exitCode = 1;
+    return;
+  }
   if (!checkModuleFilter(modules, { local, canvas, state, tag: 'status' })) {
     process.exitCode = 1;
     return;

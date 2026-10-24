@@ -1565,25 +1565,30 @@ describe('npx course pull: the flags', () => {
     ];
   }
 
-  it('-m confines the run to the module named', async () => {
-    silence();
-    const courseDir = tempDir({});
-    const file = stateFile({});
-    mockCanvas(twoModules());
+  for (const [how, selector] of [
+    ['by folder name', '01-intro'],
+    ['by number', '01'],
+  ]) {
+    it(`-m confines the run to the module named (${how})`, async () => {
+      silence();
+      const courseDir = tempDir({});
+      const file = stateFile({});
+      mockCanvas(twoModules());
 
-    await pull({
-      courseDir,
-      syncFile: file,
-      gitDirty: CLEAN,
-      module: '01-intro',
+      await pull({
+        courseDir,
+        syncFile: file,
+        gitDirty: CLEAN,
+        module: selector,
+      });
+
+      assert.deepEqual(
+        tree(courseDir),
+        ['01-intro', '01-intro/01-welcome.md', '01-intro/_category_.json'],
+        'the module that was not named must not be written',
+      );
     });
-
-    assert.deepEqual(
-      tree(courseDir),
-      ['01-intro', '01-intro/01-welcome.md', '01-intro/_category_.json'],
-      'the module that was not named must not be written',
-    );
-  });
+  }
 
   it('refuses a module name neither side answers to', async () => {
     const out = silence();
@@ -1601,26 +1606,76 @@ describe('npx course pull: the flags', () => {
     assert.match(errored(out), /no module named 99-nope/);
   });
 
-  it('accepts a module name only Canvas knows yet', async () => {
-    silence();
-    const courseDir = tempDir({});
-    const file = stateFile({});
-    mockCanvas(twoModules());
+  it('refuses a number neither side answers to', async () => {
+    const out = silence();
+    const { courseDir, file } = syncedFixture();
+    mockCanvas(readRoutes());
 
     await pull({
       courseDir,
       syncFile: file,
       gitDirty: CLEAN,
-      module: '02-later',
+      module: '09',
     });
 
-    assert.equal(process.exitCode, 0);
-    assert.deepEqual(tree(courseDir), [
-      '02-later',
-      '02-later/01-more.md',
-      '02-later/_category_.json',
-    ]);
+    assert.equal(process.exitCode, 1);
+    assert.match(errored(out), /\[pull\] Error: Module not found: 09/);
   });
+
+  it('scopes the run to a module deleted here, by its number in the state', async () => {
+    const out = silence();
+    const { courseDir, file } = syncedFixture();
+    fs.rmSync(path.join(courseDir, '01-intro'), { recursive: true });
+    // Canvas renamed it meanwhile, so only the state can tie 01 to 01-intro.
+    mockCanvas(
+      readRoutes().map((route) =>
+        route.path === '/modules'
+          ? { ...route, body: [{ id: 10, name: 'Welcome', position: 1 }] }
+          : route,
+      ),
+    );
+
+    await pull({
+      courseDir,
+      syncFile: file,
+      gitDirty: CLEAN,
+      module: '1',
+    });
+
+    assert.doesNotMatch(errored(out), /Module not found|no module named/);
+    assert.equal(process.exitCode, 0);
+    assert.match(
+      printed(out),
+      /01-intro: module "Welcome"/,
+      'the orphan is in scope, so 1 reached the planner as 01-intro',
+    );
+  });
+
+  for (const [how, selector] of [
+    ['by folder name', '02-later'],
+    ['by number', '02'],
+  ]) {
+    it(`accepts a module name only Canvas knows yet (${how})`, async () => {
+      silence();
+      const courseDir = tempDir({});
+      const file = stateFile({});
+      mockCanvas(twoModules());
+
+      await pull({
+        courseDir,
+        syncFile: file,
+        gitDirty: CLEAN,
+        module: selector,
+      });
+
+      assert.equal(process.exitCode, 0);
+      assert.deepEqual(tree(courseDir), [
+        '02-later',
+        '02-later/01-more.md',
+        '02-later/_category_.json',
+      ]);
+    });
+  }
 
   it('says so and stops when the Canvas course holds no modules', async () => {
     const out = silence();

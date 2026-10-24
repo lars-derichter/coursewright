@@ -1152,110 +1152,116 @@ describe('npx course push --prune-canvas', () => {
 // ---------------------------------------------------------------------------
 
 describe('npx course push: the flags', () => {
-  it('-m confines the run to the module named', async () => {
-    silence();
-    const courseDir = tempDir({
-      '01-intro/_category_.json': '{ "label": "Intro", "position": 1 }\n',
-      '01-intro/01-welcome.md': '---\ntitle: Welcome\n---\n\nEdited here.\n',
-      '02-later/_category_.json': '{ "label": "Later", "position": 2 }\n',
-      '02-later/01-more.md': '---\ntitle: More\n---\n\nAlso edited.\n',
-    });
-    const file = stateFile({
-      modules: {
-        '01-intro': {
-          canvas_module_id: 10,
-          name: 'Intro',
-          position: 1,
-          item_order: ['01-intro/01-welcome.md'],
-          items: {
-            '01-intro/01-welcome.md': {
-              canvas_type: 'page',
-              canvas_id: 501,
-              page_url: 'welcome',
-              module_item_id: 91,
-              title: 'Welcome',
-              local_hash: 'stale',
-              canvas_hash: 'stored',
-              canvas_updated_at: PAGE.updated_at,
-            },
-          },
-        },
-        '02-later': {
-          canvas_module_id: 20,
-          name: 'Later',
-          position: 2,
-          item_order: ['02-later/01-more.md'],
-          items: {
-            '02-later/01-more.md': {
-              canvas_type: 'page',
-              canvas_id: 601,
-              page_url: 'more',
-              module_item_id: 93,
-              title: 'More',
-              local_hash: 'stale',
-              canvas_hash: 'stored',
-              canvas_updated_at: PAGE.updated_at,
-            },
-          },
-        },
-      },
-    });
-    const calls = mockCanvas([
-      ...iconCheckRoutes(),
-      { method: 'GET', path: '/modules/10/items', body: [ITEM] },
-      {
-        method: 'GET',
-        path: '/modules/20/items',
-        body: [
-          {
-            id: 93,
-            type: 'Page',
-            title: 'More',
-            page_url: 'more',
-            content_id: 601,
+  for (const [how, selector] of [
+    ['by folder name', '01-intro'],
+    ['by number', '01'],
+    ['by a list in one value', '1,01-intro'],
+  ]) {
+    it(`-m confines the run to the module named (${how})`, async () => {
+      silence();
+      const courseDir = tempDir({
+        '01-intro/_category_.json': '{ "label": "Intro", "position": 1 }\n',
+        '01-intro/01-welcome.md': '---\ntitle: Welcome\n---\n\nEdited here.\n',
+        '02-later/_category_.json': '{ "label": "Later", "position": 2 }\n',
+        '02-later/01-more.md': '---\ntitle: More\n---\n\nAlso edited.\n',
+      });
+      const file = stateFile({
+        modules: {
+          '01-intro': {
+            canvas_module_id: 10,
+            name: 'Intro',
             position: 1,
-            indent: 0,
+            item_order: ['01-intro/01-welcome.md'],
+            items: {
+              '01-intro/01-welcome.md': {
+                canvas_type: 'page',
+                canvas_id: 501,
+                page_url: 'welcome',
+                module_item_id: 91,
+                title: 'Welcome',
+                local_hash: 'stale',
+                canvas_hash: 'stored',
+                canvas_updated_at: PAGE.updated_at,
+              },
+            },
           },
-        ],
-      },
-      {
-        method: 'GET',
-        path: '/modules',
-        body: [
-          { id: 10, name: 'Intro', position: 1 },
-          { id: 20, name: 'Later', position: 2 },
-        ],
-      },
-      {
-        method: 'GET',
-        path: '/pages',
-        body: [
-          pageRow(PAGE),
-          {
-            page_id: 601,
-            url: 'more',
-            title: 'More',
-            updated_at: PAGE.updated_at,
+          '02-later': {
+            canvas_module_id: 20,
+            name: 'Later',
+            position: 2,
+            item_order: ['02-later/01-more.md'],
+            items: {
+              '02-later/01-more.md': {
+                canvas_type: 'page',
+                canvas_id: 601,
+                page_url: 'more',
+                module_item_id: 93,
+                title: 'More',
+                local_hash: 'stale',
+                canvas_hash: 'stored',
+                canvas_updated_at: PAGE.updated_at,
+              },
+            },
           },
-        ],
-      },
-      { method: 'PUT', path: '/pages/501', body: PAGE },
-    ]);
+        },
+      });
+      const calls = mockCanvas([
+        ...iconCheckRoutes(),
+        { method: 'GET', path: '/modules/10/items', body: [ITEM] },
+        {
+          method: 'GET',
+          path: '/modules/20/items',
+          body: [
+            {
+              id: 93,
+              type: 'Page',
+              title: 'More',
+              page_url: 'more',
+              content_id: 601,
+              position: 1,
+              indent: 0,
+            },
+          ],
+        },
+        {
+          method: 'GET',
+          path: '/modules',
+          body: [
+            { id: 10, name: 'Intro', position: 1 },
+            { id: 20, name: 'Later', position: 2 },
+          ],
+        },
+        {
+          method: 'GET',
+          path: '/pages',
+          body: [
+            pageRow(PAGE),
+            {
+              page_id: 601,
+              url: 'more',
+              title: 'More',
+              updated_at: PAGE.updated_at,
+            },
+          ],
+        },
+        { method: 'PUT', path: '/pages/501', body: PAGE },
+      ]);
 
-    await push({
-      courseDir,
-      syncFile: file,
-      gitDirty: CLEAN,
-      interactive: false,
-      module: '01-intro',
+      await push({
+        courseDir,
+        syncFile: file,
+        gitDirty: CLEAN,
+        interactive: false,
+        module: selector,
+      });
+
+      assert.deepEqual(
+        endpoints(calls),
+        [`PUT /courses/${COURSE_ID}/pages/501`],
+        'the module that was not named must not be written',
+      );
     });
-
-    assert.deepEqual(
-      endpoints(calls),
-      [`PUT /courses/${COURSE_ID}/pages/501`],
-      'the module that was not named must not be written',
-    );
-  });
+  }
 
   it('refuses a module name no folder answers to', async () => {
     const out = silence();
@@ -1275,6 +1281,60 @@ describe('npx course push: the flags', () => {
     assert.match(
       out.error.mock.calls.map((call) => call.arguments.join(' ')).join('\n'),
       /no module folder named 99-nope/,
+    );
+  });
+
+  it('refuses a number no module answers to, before reading Canvas', async () => {
+    const out = silence();
+    const { courseDir, file } = syncedFixture();
+    const calls = mockCanvas([]);
+
+    await push({
+      courseDir,
+      syncFile: file,
+      gitDirty: CLEAN,
+      interactive: false,
+      module: '09',
+    });
+
+    assert.deepEqual(calls, []);
+    assert.equal(process.exitCode, 1);
+    assert.match(
+      out.error.mock.calls.map((call) => call.arguments.join(' ')).join('\n'),
+      /\[push\] Error: Module not found: 09/,
+    );
+  });
+
+  it('finds a module deleted here by number, and refuses it by name', async () => {
+    // The state still remembers the folder, so the number resolves to it, and
+    // push then says what it says of that folder's full name: there is nothing
+    // here to push from.
+    const out = silence();
+    const { courseDir, file } = syncedFixture();
+    const state = readState(file);
+    state.modules['99-icon-check'] = {
+      canvas_module_id: 99,
+      name: 'Icon check',
+      position: 99,
+      item_order: [],
+      items: {},
+    };
+    fs.writeFileSync(file, JSON.stringify(state, null, 2), 'utf8');
+    const calls = mockCanvas([]);
+
+    await push({
+      courseDir,
+      syncFile: file,
+      gitDirty: CLEAN,
+      interactive: false,
+      module: ['99'],
+    });
+
+    assert.deepEqual(calls, []);
+    assert.equal(process.exitCode, 1);
+    assert.match(
+      out.error.mock.calls.map((call) => call.arguments.join(' ')).join('\n'),
+      /no module folder named 99-icon-check under course\//,
     );
   });
 
