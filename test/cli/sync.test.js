@@ -88,6 +88,21 @@ function recordedIcons() {
   return icons;
 }
 
+/**
+ * The existence check `ensureIcons` makes on each recorded icon before it
+ * trusts the row: one `GET /files/:id` per icon, all answered 200, so the
+ * recorded icons stand and no upload follows.
+ */
+function iconCheckRoutes() {
+  return Object.keys(require('../../lib/convert/alert-icons').ICON_FILES).map(
+    () => ({
+      method: 'GET',
+      path: '/api/v1/files/900',
+      body: { id: 900 },
+    }),
+  );
+}
+
 const PAGE = {
   page_id: 501,
   url: 'welcome',
@@ -249,7 +264,7 @@ describe('npx course sync', () => {
       'utf8',
     );
     // No PUT route, so the single write this run plans answers 400 and throws.
-    mockCanvas(readRoutes());
+    mockCanvas([...iconCheckRoutes(), ...readRoutes()]);
 
     await sync({
       courseDir,
@@ -279,6 +294,7 @@ describe('npx course sync', () => {
       'utf8',
     );
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       ...readRoutes(),
       {
         method: 'PUT',
@@ -323,6 +339,7 @@ describe('npx course sync', () => {
       silence();
       const { courseDir, file, movedPage } = conflicted();
       const calls = mockCanvas([
+        ...iconCheckRoutes(),
         ...readRoutes({ page: movedPage }),
         { method: 'PUT', path: '/pages/501', body: movedPage },
       ]);
@@ -1004,6 +1021,7 @@ describe('npx course sync', () => {
         courseDir,
         file,
         routes: [
+          ...iconCheckRoutes(),
           { method: 'GET', path: '/modules/10/items', body: [HW_ITEM] },
           {
             method: 'GET',

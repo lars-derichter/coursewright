@@ -1069,6 +1069,13 @@ describe('the Canvas folder an embedded binary uploads into', () => {
       indent: 0,
     };
     const calls = mockCanvas([
+      // The existence check `ensureIcons` makes on each recorded icon, all
+      // answered 200, so the recorded icons stand.
+      ...Object.keys(ICON_FILES).map(() => ({
+        method: 'GET',
+        path: '/api/v1/files/900',
+        body: { id: 900 },
+      })),
       { method: 'POST', path: '/modules/10/items', body: item },
       {
         method: 'POST',

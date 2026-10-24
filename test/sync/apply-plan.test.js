@@ -116,6 +116,19 @@ function recordedIcons() {
   return icons;
 }
 
+/**
+ * The existence check `ensureIcons` makes on each recorded icon before it
+ * trusts the row: one `GET /files/:id` per icon, all answered 200, so the
+ * recorded icons stand and no upload follows.
+ */
+function iconCheckRoutes() {
+  return Object.keys(ICON_FILES).map(() => ({
+    method: 'GET',
+    path: '/api/v1/files/900',
+    body: { id: 900 },
+  }));
+}
+
 function calledWith(calls, method, fragment) {
   return calls.filter(
     (call) => call.method === method && call.url.includes(fragment),
@@ -164,6 +177,7 @@ describe('the fingerprint invariant, Canvas direction', () => {
       indent: 0,
     };
     mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'POST', path: '/modules/10/items', body: createdItem },
       {
         method: 'POST',
@@ -484,6 +498,7 @@ describe('a pull writes what `npm run format` would leave', () => {
 
     mock.restoreAll();
     mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'POST', path: '/modules', body: { id: 10, position: 1 } },
       {
         method: 'POST',
@@ -1244,6 +1259,7 @@ describe('the fingerprint invariant, a page and the binary it embeds', () => {
 
     mock.restoreAll();
     mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'POST', path: '/modules/10/items', body: item },
       {
         method: 'POST',
@@ -1300,6 +1316,7 @@ describe('the fingerprint invariant, a page and the binary it embeds', () => {
 
     mock.restoreAll();
     const writes = mockCanvas([
+      ...iconCheckRoutes(),
       ...uploadRoutes(),
       { method: 'PUT', path: '/pages/501', body: page },
     ]);
@@ -1412,6 +1429,7 @@ describe('the fingerprint invariant, an item dragged into a subfolder', () => {
 
     mock.restoreAll();
     mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'POST', path: '/modules/10/items', body: item },
       {
         method: 'POST',
@@ -1470,6 +1488,7 @@ describe('the fingerprint invariant, an item dragged into a subfolder', () => {
     };
     const indented = { ...item, position: 2, indent: 1 };
     const writes = mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'POST', path: '/modules/10/items', body: header },
       { method: 'PUT', path: '/modules/10/items/91', body: indented },
       { method: 'PUT', path: '/pages/501', body: page },
@@ -1689,7 +1708,10 @@ describe('the module link, over two passes', () => {
     );
 
     mock.restoreAll();
-    mockCanvas([{ method: 'PUT', path: '/pages/501', body: page }]);
+    mockCanvas([
+      ...iconCheckRoutes(),
+      { method: 'PUT', path: '/pages/501', body: page },
+    ]);
     const outcome = await run(first, {
       courseDir,
       state,
@@ -1796,7 +1818,10 @@ describe('the module link, over two passes', () => {
     );
 
     mock.restoreAll();
-    mockCanvas([{ method: 'PUT', path: '/pages/501', body: page }]);
+    mockCanvas([
+      ...iconCheckRoutes(),
+      { method: 'PUT', path: '/pages/501', body: page },
+    ]);
     const outcome = await run(first, {
       courseDir,
       state,
@@ -1902,6 +1927,7 @@ describe('the module link, over two passes', () => {
     };
     mock.restoreAll();
     mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'POST', path: '/modules/10/items', body: createdItem },
       { method: 'POST', path: '/pages', body: createdPage },
     ]);
@@ -2240,6 +2266,7 @@ describe('applyPlan, per action type', () => {
       },
     };
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       {
         // A page is addressed by its numeric id, which a rename does not move.
         method: 'PUT',
@@ -2309,6 +2336,7 @@ describe('applyPlan, per action type', () => {
       },
     };
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       {
         method: 'PUT',
         path: '/pages/501',
@@ -2521,6 +2549,7 @@ describe('applyPlan, per action type', () => {
       },
     };
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       {
         method: 'PUT',
         path: '/pages/501',
@@ -2839,6 +2868,7 @@ describe('applyPlan, per action type', () => {
       items: {},
     };
     mockCanvas([
+      ...iconCheckRoutes(),
       {
         method: 'POST',
         path: '/modules/10/items',
@@ -2909,6 +2939,7 @@ describe('applyPlan, per action type', () => {
       items: {},
     };
     mockCanvas([
+      ...iconCheckRoutes(),
       {
         method: 'POST',
         path: '/modules/10/items',
@@ -2983,6 +3014,7 @@ describe('applyPlan, per action type', () => {
       items: {},
     };
     mockCanvas([
+      ...iconCheckRoutes(),
       {
         method: 'POST',
         path: '/assignments',
@@ -3079,6 +3111,7 @@ describe('applyPlan, per action type', () => {
       items: {},
     };
     mockCanvas([
+      ...iconCheckRoutes(),
       {
         method: 'POST',
         path: '/assignments',
@@ -3573,8 +3606,8 @@ describe('applyPlan, per action type', () => {
   it('does not upload an icon the state already records under this theme', async () => {
     silence();
     // No upload routes at all: `ensureIcons` skips an icon whose stored theme
-    // fingerprint still matches, and that record is the whole of its
-    // idempotency.
+    // fingerprint still matches and whose file Canvas still answers for, and
+    // that record is the whole of its idempotency.
     const courseDir = tempCourse({
       '01-intro/01-welcome.md':
         '---\ntitle: Welcome\n---\n\n> [!NOTE]\n> Careful.\n',
@@ -3588,6 +3621,7 @@ describe('applyPlan, per action type', () => {
     };
 
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       {
         method: 'POST',
         path: '/modules/10/items',
@@ -4739,6 +4773,7 @@ describe('applyPlan, per action type', () => {
       items: {},
     };
     mockCanvas([
+      ...iconCheckRoutes(),
       // No route for the first module, so it 400s; the second is routed.
       { method: 'POST', path: '/modules', body: { id: 20, name: 'Second' } },
     ]);
@@ -4970,6 +5005,7 @@ describe('renaming a binary a page embeds', () => {
 
     mock.restoreAll();
     mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'POST', path: '/modules/10/items', body: moduleItem },
       {
         method: 'POST',
@@ -5011,6 +5047,7 @@ describe('renaming a binary a page embeds', () => {
 
     mock.restoreAll();
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       ...uploadRoutes('brand', NEW_FILE, 'brand.png'),
       { method: 'PUT', path: '/pages/501', body: page(imgFor(NEW_FILE)) },
       {

@@ -8,6 +8,7 @@ process.env.CANVAS_API_TOKEN = 'test-token-123';
 
 const { ensureIcons } = require('../../lib/canvas/icons');
 const { ICON_FILES } = require('../../lib/convert/alert-icons');
+const { loadTheme, themeFingerprint } = require('../../lib/config/theme');
 
 const COURSE_ID = 4242;
 const ICON_TYPES = Object.keys(ICON_FILES);
@@ -100,6 +101,124 @@ describe('ensureIcons', () => {
       grants.map((call) => call.body.name),
       ICON_TYPES.map((type) => ICON_FILES[type]),
     );
+  });
+
+  describe('an icon the state already records', () => {
+    // A row outlives its file. `reset-canvas` deletes `/course-icons` with
+    // everything else, and an author can delete the folder by hand, and either
+    // way the row still names a file id under the current theme. Trusting the
+    // row alone sent every page that push rendered up with an `<img>` pointing
+    // at a dead file, while `status` reported the course in sync.
+    const RECORDED_ID = 500;
+    const fingerprint = themeFingerprint(loadTheme());
+
+    /** Every icon recorded under the current theme, one id each. */
+    function recordedState() {
+      const icons = {};
+      ICON_TYPES.forEach((type, index) => {
+        icons[type] = {
+          canvas_file_id: RECORDED_ID + index,
+          preview_url: `https://canvas.example.com/recorded/${type}`,
+          theme: fingerprint,
+        };
+      });
+      return { icons };
+    }
+
+    /** One existence check per icon; `answers` overrides a type's status. */
+    function checkRoutes(answers = {}) {
+      return ICON_TYPES.map((type, index) => ({
+        method: 'GET',
+        path: `/api/v1/files/${RECORDED_ID + index}`,
+        status: answers[type] || 200,
+        body: answers[type]
+          ? { errors: [{ message: 'nope' }] }
+          : { id: RECORDED_ID + index },
+      }));
+    }
+
+    function uploads(calls) {
+      return calls.filter((call) => call.method === 'POST');
+    }
+
+    it('uploads it again when Canvas answers 404, and records the new file', async () => {
+      const out = silence();
+      const NEW_ID = 950;
+      const calls = mockCanvas([
+        ...checkRoutes({ note: 404 }),
+        {
+          method: 'POST',
+          path: `/courses/${COURSE_ID}/files`,
+          body: {
+            upload_url: 'https://canvas.example.com/upload/note',
+            upload_params: {},
+          },
+        },
+        {
+          method: 'POST',
+          path: '/upload/note',
+          body: { id: NEW_ID, display_name: ICON_FILES.note },
+        },
+      ]);
+      const syncData = recordedState();
+
+      await ensureIcons(COURSE_ID, syncData);
+
+      assert.deepEqual(syncData.icons.note, {
+        canvas_file_id: NEW_ID,
+        preview_url: `https://canvas.example.com/courses/${COURSE_ID}/files/${NEW_ID}/preview`,
+        theme: fingerprint,
+      });
+      const grants = uploads(calls).filter((call) =>
+        call.url.endsWith(`/courses/${COURSE_ID}/files`),
+      );
+      assert.deepEqual(
+        grants.map((call) => call.body.name),
+        [ICON_FILES.note],
+        'only the missing icon goes up again',
+      );
+      for (const type of ICON_TYPES.filter((type) => type !== 'note')) {
+        assert.deepEqual(syncData.icons[type], recordedState().icons[type]);
+      }
+      const said = out.log.mock.calls
+        .map((call) => call.arguments.join(' '))
+        .join('\n');
+      assert.match(
+        said,
+        new RegExp(
+          `${ICON_FILES.note} is gone from Canvas \\(id ${RECORDED_ID + ICON_TYPES.indexOf('note')}\\)`,
+        ),
+      );
+    });
+
+    it('makes no upload when Canvas still has every file', async () => {
+      silence();
+      const calls = mockCanvas(checkRoutes());
+      const syncData = recordedState();
+
+      await ensureIcons(COURSE_ID, syncData);
+
+      assert.deepEqual(uploads(calls), []);
+      assert.deepEqual(syncData, recordedState());
+    });
+
+    it('keeps the row and warns when the check fails for another reason', async () => {
+      // A check that cannot answer must not block a push that worked before
+      // it existed, so anything but a 404 leaves the row as it was.
+      const out = silence();
+      const calls = mockCanvas(checkRoutes({ note: 401 }));
+      const syncData = recordedState();
+
+      await ensureIcons(COURSE_ID, syncData);
+
+      assert.deepEqual(uploads(calls), []);
+      assert.deepEqual(syncData, recordedState());
+      const warned = out.warn.mock.calls
+        .map((call) => call.arguments.join(' '))
+        .join('\n');
+      assert.match(warned, new RegExp(`cannot check ${ICON_FILES.note}`));
+      assert.match(warned, /401/);
+    });
   });
 
   it('records a preview URL for every icon', async () => {

@@ -128,7 +128,9 @@ Key properties:
   which is how the engine tells "changed here" from "changed there".
 - **icons**, one entry per alert type: the Canvas file id, the preview URL the
   HTML converter embeds, and a fingerprint of the theme the SVG was painted in,
-  so a theme change re-uploads the icons and an unchanged theme does not.
+  so a theme change re-uploads the icons and an unchanged theme does not. A run
+  that renders alerts still asks Canvas for each recorded file, and re-uploads
+  one Canvas no longer has.
 - **files**: one row per embedded binary (an image, a PDF) with its Canvas file
   id and URL and a SHA-256 of its content, so a changed file is re-uploaded and
   an unchanged one is not. A key normally opens with its module folder; one for

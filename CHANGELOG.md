@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- A push puts the alert icons back when they are gone from Canvas. It used to
+  trust `.canvas-sync.json` alone: an icon recorded under the current theme was
+  taken to exist, whatever had happened to the file since. So after
+  `npx course reset-canvas` followed by a push, without
+  `npx course reset-sync-state` in between, or after deleting the
+  `/course-icons` folder by hand in Canvas, every callout the push rendered
+  pointed at a file that no longer existed and showed a broken image, while
+  `status` reported the course in sync. Each run that renders a page, an
+  assignment or a discussion now asks Canvas whether every recorded icon is
+  still there, one request per icon, and uploads any that Canvas answers is
+  gone, recording its new id. If Canvas cannot be asked, for a lapsed token or a
+  network fault, the recorded icon is kept and a warning names it, so the push
+  goes ahead as it did before.
+
+  Only the pages a push renders pick up the new icons. After `reset-canvas` that
+  is every page, because the push creates them all again. After a hand-deleted
+  `/course-icons`, a page you have not changed since keeps its broken icon until
+  you next edit and push it.
+
 ## 1.6.0 (2026-10-24)
 
 - The tutorial's **Setting Up** pages say where Coursewright comes from. **What

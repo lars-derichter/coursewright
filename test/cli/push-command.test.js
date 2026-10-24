@@ -61,6 +61,21 @@ function recordedIcons() {
   return icons;
 }
 
+/**
+ * The existence check `ensureIcons` makes on each recorded icon before it
+ * trusts the row: one `GET /files/:id` per icon, all answered 200, so the
+ * recorded icons stand and no upload follows.
+ */
+function iconCheckRoutes() {
+  return Object.keys(require('../../lib/convert/alert-icons').ICON_FILES).map(
+    () => ({
+      method: 'GET',
+      path: '/api/v1/files/900',
+      body: { id: 900 },
+    }),
+  );
+}
+
 /** A sync state on disk, so the command's own load/save path is exercised. */
 function stateFile(state) {
   const file = path.join(
@@ -252,7 +267,7 @@ describe('npx course push', () => {
       'utf8',
     );
     // No PUT route, so the single write this run plans answers 400 and throws.
-    mockCanvas(readRoutes());
+    mockCanvas([...iconCheckRoutes(), ...readRoutes()]);
 
     await push({
       courseDir,
@@ -279,6 +294,7 @@ describe('npx course push', () => {
       'utf8',
     );
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       ...readRoutes(),
       {
         method: 'PUT',
@@ -312,6 +328,7 @@ describe('npx course push', () => {
       updated_at: '2026-08-20T13:00:00.000Z',
     };
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       ...readRoutes({ pages: [movedPage] }),
       { method: 'PUT', path: '/pages/501', body: movedPage },
     ]);
@@ -467,6 +484,7 @@ describe('npx course push, into a course that already holds content', () => {
     const out = silence();
     const { courseDir, file } = populated();
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       // The three counts the first-push confirmation asks for, before the
       // course is read for real: each one is spliced out on the way past, so
       // the reads below still have their own routes.
@@ -507,6 +525,7 @@ describe('npx course push, into a course that already holds content', () => {
     silence();
     const { courseDir, file } = populated();
     mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'GET', path: '/modules', body: [{ id: 10, name: 'Intro' }] },
       { method: 'GET', path: '/pages', body: [pageRow(PAGE)] },
       { method: 'GET', path: '/assignments', body: [] },
@@ -1182,6 +1201,7 @@ describe('npx course push: the flags', () => {
       },
     });
     const calls = mockCanvas([
+      ...iconCheckRoutes(),
       { method: 'GET', path: '/modules/10/items', body: [ITEM] },
       {
         method: 'GET',
