@@ -2,7 +2,7 @@
   "name": "coursewright",
   "displayName": "Coursewright",
   "description": "VS Code sidebar and palette commands for the Coursewright CLI",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "publisher": "local",
   "license": "MIT",
   "repository": {

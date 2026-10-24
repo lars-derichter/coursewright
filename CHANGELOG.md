@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.4 (2026-10-24)
+
+- The dependencies are upgraded: dotenv to 18, `@vscode/vsce` to 4, and
+  everything else to its newest release within the range `package.json` allows.
+  `.node-version` and `.tool-versions` pin Node 24.22.1, the newest 24 LTS
+  release. No command behaves differently. Run `npm install` after the upstream
+  update, as the update script reminds you to, so the project runs on the new
+  versions. `npm audit` still reports advisories in the Docusaurus build and
+  preview toolchain; they wait on a Docusaurus release, and `npm audit fix`
+  resolves them by nesting an older Docusaurus, so leave it alone.
+
 ## 1.5.3 (2026-10-02)
 
 - A pull now downloads a file item's binary onto the path its `file_ref` names
