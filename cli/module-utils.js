@@ -139,6 +139,113 @@ function getExistingModules() {
   return modules;
 }
 
+/** A folder's numeric prefix as a number, or null for a folder without one. */
+function folderPrefix(folderName) {
+  const match = folderName.match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+/**
+ * Resolve `-m` values to module folder names.
+ *
+ * Each selector is split on commas, and each piece is a full folder name
+ * (`03-css-basics`), a number (`03` or `3`) matching the folder with that
+ * prefix, or a range (`03-05`) matching every folder whose prefix lies in it.
+ * The exact name is tried first, so a folder literally called `03-05` still
+ * resolves to itself. A range skips a missing number quietly; one that matches
+ * nothing at all is an error, as is an unknown name or number. A number two
+ * folders share is an error too, naming both, since nothing says which was
+ * meant. A range takes both, because it asks for every folder in it.
+ *
+ * It takes plain folder names rather than scanned modules, so a caller can
+ * pass folders that exist only in the sync state. Pure: no filesystem, no
+ * logging, so a failure is a thrown Error for the caller to report its own way.
+ *
+ * @param {string|string[]} selectors - The raw `-m` values.
+ * @param {string[]} folderNames - Every module folder to choose from. Their order
+ *   breaks ties between folders with the same prefix.
+ * @param {object} [options]
+ * @param {boolean} [options.single] - Refuse a selection of more than one module.
+ * @returns {string[]} The matching folder names, in prefix order, each once.
+ * @throws {Error} On an unknown token, an empty range, a backwards range, an
+ *   ambiguous number, or (with `single`) more than one match.
+ */
+function resolveModuleSelectors(selectors, folderNames, { single } = {}) {
+  const tokens = []
+    .concat(selectors || [])
+    .flatMap((s) => String(s).split(','))
+    .map((t) => t.trim())
+    .filter(Boolean);
+  if (tokens.length === 0) throw new Error('No module given.');
+
+  const withPrefix = (match) =>
+    folderNames.filter((f) => {
+      const n = folderPrefix(f);
+      return n !== null && match(n);
+    });
+
+  const picked = new Set();
+  for (const token of tokens) {
+    if (folderNames.includes(token)) {
+      picked.add(token);
+      continue;
+    }
+    const number = token.match(/^(\d+)$/);
+    if (number) {
+      const n = parseInt(number[1], 10);
+      const matches = withPrefix((p) => p === n);
+      if (matches.length === 0) throw new Error(`Module not found: ${token}`);
+      if (matches.length > 1) {
+        throw new Error(
+          `Module number ${token} is ambiguous, more than one folder starts ` +
+            `with it: ${matches.join(', ')}. Give the full folder name.`,
+        );
+      }
+      picked.add(matches[0]);
+      continue;
+    }
+    const range = token.match(/^(\d+)-(\d+)$/);
+    if (range) {
+      const from = parseInt(range[1], 10);
+      const to = parseInt(range[2], 10);
+      if (from > to) {
+        throw new Error(
+          `Module range ${token} runs backwards: write ${range[2]}-${range[1]}.`,
+        );
+      }
+      const matches = withPrefix((p) => p >= from && p <= to);
+      if (matches.length === 0) {
+        throw new Error(`No module in range ${token}.`);
+      }
+      for (const m of matches) picked.add(m);
+      continue;
+    }
+    // `-m` is variadic, so a path typed after it lands here as a selector.
+    if (token.includes('/') || /\.md$/i.test(token)) {
+      throw new Error(
+        `Not a module: ${token}. -m takes modules only, and reads every ` +
+          'argument after it as one.',
+      );
+    }
+    throw new Error(`Module not found: ${token}`);
+  }
+
+  // Course order, whatever order they were typed in. A folder without a prefix
+  // can only be picked by its full name, and sorts after the numbered ones.
+  const rank = (f) => folderPrefix(f) ?? Infinity;
+  const result = folderNames
+    .filter((f) => picked.has(f))
+    .sort((a, b) => rank(a) - rank(b));
+
+  if (single && result.length > 1) {
+    throw new Error(
+      `This command takes one module, but ${tokens.join(',')} selects ` +
+        `${result.length}: ${result.join(', ')}.`,
+    );
+  }
+  return result;
+}
+
 /**
  * Pad a number to two digits: 1 -> "01", 12 -> "12".
  */
@@ -291,6 +398,7 @@ module.exports = {
   ask,
   prompt,
   getExistingModules,
+  resolveModuleSelectors,
   pad,
   MAX_SLUG_LENGTH,
   truncateSlug,

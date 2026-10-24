@@ -61,19 +61,21 @@ exporting just those. See [Frontmatter](frontmatter.md#common-fields).
 Output lands in `exports/` (gitignored). A whole-course export takes its title,
 and its filename, from `title` in `course.config.yml`
 (`exports/programming-fundamentals.pdf`); a module export is titled after the
-module. Multiple items combine into one document with a title page, a generated
-table of contents, and a page break between chapters. Each item opens with a
-heading built from its `title` in the frontmatter, page-type emoji included,
-whatever its body starts with; see [Markdown](markdown.md#headings).
-Non-markdown items keep their place: an external URL becomes a link card, a file
-item an attachment reference, and an image file item is embedded above its
-attachment line.
+module. Several modules in one export take the course title too, and their
+numbers go on the filename (`exports/programming-fundamentals-03-04-05.pdf`).
+Multiple items combine into one document with a title page, a generated table of
+contents, and a page break between chapters. Each item opens with a heading
+built from its `title` in the frontmatter, page-type emoji included, whatever
+its body starts with; see [Markdown](markdown.md#headings). Non-markdown items
+keep their place: an external URL becomes a link card, a file item an attachment
+reference, and an image file item is embedded above its attachment line.
 
 ### From the Terminal
 
 ```bash
 npx course export course/01-intro/03-alerts.md   # one item
 npx course export -m 01-intro                    # a whole module
+npx course export -m 03-05,07                    # modules 03 to 05, and 07
 npx course export                                # the full course
 npx course export -m 01-intro -f docx            # Word instead of PDF
 npx course export --flagged                      # only items with export: true
@@ -81,16 +83,24 @@ npx course export-toc                            # writes exports/toc.md
 npx course export --toc exports/toc.md           # render a curated selection
 ```
 
-`-o`, `--title`, `--subtitle`, `--style`, `--var` and `-f md` are terminal-only:
-the panel has no route to any of them. See
+`-m` takes a full folder name, a number (`03`), a range (`03-05`), a comma list
+(`03,05`) or several of them (`-m 03 05`), and always exports in course order. A
+range skips a missing number, but one that matches no module at all is an error,
+as is a number two folders share. Because `-m` takes several values, it swallows
+whatever follows it: `export -m 03 course/01-intro/03-alerts.md` reads the path
+as a module and stops with `Not a module`. A path before `-m` is refused as
+well: a module and item paths do not combine in one export.
+
+`-o`, `--title`, `--subtitle`, `--style`, `--var`, `-f md` and a `-m` naming
+several modules are terminal-only: the panel has no route to any of them. See
 [CLI reference](cli-reference.md#export) for the full flag list.
 
 ### Markdown
 
 `-f md` writes the export as a plain markdown file rather than a rendered
-document. It takes the same scopes as PDF and Word, one item, a module, the
-whole course, `--flagged` or a curated TOC file, and it needs neither pandoc nor
-Typst.
+document. It takes the same scopes as PDF and Word, one item, one module or
+several, the whole course, `--flagged` or a curated TOC file, and it needs
+neither pandoc nor Typst.
 
 ```bash
 npx course export -f md                   # the whole course as one file
@@ -103,14 +113,14 @@ or Gemini and asks the chatbot questions about the course; you can also read it
 yourself as one file instead of clicking through the site. The document opens
 with a header: the title as a first-level heading, the subtitle and the course
 name on one italic line, then the date. The items follow at the same heading
-levels the PDF uses, module titles as H1 and items as H2 for a whole course,
-items as H1 for a module. In a whole module or course, a subfolder's heading
-sits at item level with its pages one level below it; a selection (a TOC file, a
-list of paths or `--flagged`) has no subfolder headings and puts every page at
-item level. Each item heading is built from its `title` in the frontmatter,
-page-type emoji included, exactly as the PDF builds it. A single item gets no
-header, the way it gets no title page in PDF, and its own title is the one H1 in
-the file.
+levels the PDF uses, module titles as H1 and items as H2 for a whole course or
+several modules, items as H1 for a single module. In whole modules or a whole
+course, a subfolder's heading sits at item level with its pages one level below
+it; a selection (a TOC file, a list of paths or `--flagged`) has no subfolder
+headings and puts every page at item level. Each item heading is built from its
+`title` in the frontmatter, page-type emoji included, exactly as the PDF builds
+it. A single item gets no header, the way it gets no title page in PDF, and its
+own title is the one H1 in the file.
 
 Everything the chatbot cannot follow is taken out. Images become their alt text
 in italics, and disappear when they have none. Links to other pages, to

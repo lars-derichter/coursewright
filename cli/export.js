@@ -4,7 +4,7 @@ const path = require('path');
 
 const log = require('./logger');
 const { PROJECT_ROOT } = require('./project-root');
-const { COURSE_DIR } = require('./module-utils');
+const { COURSE_DIR, resolveModuleSelectors } = require('./module-utils');
 const { scanCourse, flattenItems } = require('../lib/convert/course-scanner');
 const { preflight } = require('../lib/export/preflight');
 const { resolveStyle } = require('../lib/export/style-resolver');
@@ -270,37 +270,84 @@ function resolveMode(paths, options, index, labels = getLabels(), course = {}) {
     };
   }
 
-  // -m <folder> or a single directory positional -> whole module.
-  let moduleFolder = options.module;
-  if (!moduleFolder && paths.length === 1) {
-    const resolved = resolvePositional(paths[0], byPath);
-    if (resolved.kind === 'module') moduleFolder = resolved.folder;
+  // -m <selectors...> or a single directory positional -> whole modules.
+  let moduleFolders = null;
+  if (options.module && paths.length > 0) {
+    throw new Error(
+      `Cannot mix -m with item paths: ${paths.join(', ')}. A module and ` +
+        'item paths do not combine in one export.',
+    );
   }
-  if (moduleFolder) {
-    const mod = modules.find((m) => m.folderName === moduleFolder);
-    if (!mod) throw new Error(`Module not found: ${moduleFolder}`);
-    // The whole module keeps its subheaders, and with them the indent of the
+  if (options.module) {
+    moduleFolders = resolveModuleSelectors(
+      options.module,
+      modules.map((m) => m.folderName),
+    );
+  } else if (paths.length === 1) {
+    const resolved = resolvePositional(paths[0], byPath);
+    if (resolved.kind === 'module') moduleFolders = [resolved.folder];
+  }
+  if (moduleFolders) {
+    const selected = moduleFolders.map((folder) => {
+      const mod = modules.find((m) => m.folderName === folder);
+      if (!mod) throw new Error(`Module not found: ${folder}`);
+      return mod;
+    });
+    // A whole module keeps its subheaders, and with them the indent of the
     // items under each. A flagged pick flattens them away, so it lifts its
     // items to item level as groupByModule does.
-    let items = mod.items;
-    if (options.flagged) {
-      items = flattenItems(items)
-        .filter(
-          (n) =>
-            n.type === 'item' && n.frontmatter && n.frontmatter.export === true,
-        )
-        .map(atItemLevel);
+    const groups = selected
+      .map((mod) => {
+        let items = mod.items;
+        if (options.flagged) {
+          items = flattenItems(items)
+            .filter(
+              (n) =>
+                n.type === 'item' &&
+                n.frontmatter &&
+                n.frontmatter.export === true,
+            )
+            .map(atItemLevel);
+        }
+        return {
+          moduleTitle: mod.moduleName,
+          moduleFolder: mod.folderName,
+          items,
+        };
+      })
+      .filter((g) => flattenItems(g.items).some((n) => n.type === 'item'));
+    if (groups.length === 0) {
+      const which = moduleFolders.length === 1 ? 'module' : 'modules';
+      throw new Error(
+        `No items to export in ${which} ${moduleFolders.join(', ')}.`,
+      );
     }
-    if (flattenItems(items).every((n) => n.type !== 'item')) {
-      throw new Error(`No items to export in module ${moduleFolder}.`);
+
+    if (selected.length === 1) {
+      const [mod] = selected;
+      return {
+        groups,
+        regime: 'flat',
+        defaultSlug: mod.folderName,
+        defaultTitle: mod.moduleName,
+      };
     }
+
+    // Several modules read as a cut of the course, so they take its title and
+    // its heading regime, and the slug says which modules it holds. The regime
+    // follows the selection rather than what --flagged leaves of it, so every
+    // page still sits under the heading of the module it came from.
+    const prefixes = selected.map(
+      (m) => (m.folderName.match(/^\d+/) || [m.folderName])[0],
+    );
     return {
-      groups: [
-        { moduleTitle: mod.moduleName, moduleFolder: mod.folderName, items },
-      ],
-      regime: 'flat',
-      defaultSlug: mod.folderName,
-      defaultTitle: mod.moduleName,
+      groups,
+      regime: 'course',
+      defaultSlug: [exportSlug(options.title || courseTitle, labels)]
+        .concat(prefixes)
+        .join('-'),
+      defaultTitle: options.title || courseTitle,
+      defaultSubtitle: courseSubtitle,
     };
   }
 

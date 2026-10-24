@@ -452,6 +452,128 @@ describe('resolveMode with a subfolder page', () => {
   });
 });
 
+describe('resolveMode with several modules', () => {
+  // The subfolder fixture plus a third module whose one page is not flagged,
+  // so a --flagged export has a module to drop.
+  function threeModuleIndex() {
+    const { index } = subfolderIndex();
+    const plain = { ...pageNode('03-c/01-plain.md', 'Plain'), frontmatter: {} };
+    index.modules.push({ folderName: '03-c', moduleName: 'C', items: [plain] });
+    index.byPath.set(plain.relativePath, {
+      item: plain,
+      moduleFolder: '03-c',
+      moduleName: 'C',
+    });
+    return index;
+  }
+  const course = { title: 'My Course', tagline: 'A tagline' };
+
+  it('keeps one module by number in the flat regime, as before', () => {
+    const mode = resolveMode(
+      [],
+      { module: ['01'] },
+      threeModuleIndex(),
+      getLabels(),
+      course,
+    );
+    assert.equal(mode.regime, 'flat');
+    assert.equal(mode.defaultTitle, 'A');
+    assert.equal(mode.defaultSlug, '01-a');
+    assert.equal(mode.groups.length, 1);
+  });
+
+  it('exports several modules in the course regime, subheaders intact', () => {
+    const mode = resolveMode(
+      [],
+      { module: ['01-03'] },
+      threeModuleIndex(),
+      getLabels(),
+      course,
+    );
+    assert.equal(mode.regime, 'course');
+    assert.deepEqual(
+      mode.groups.map((g) => g.moduleFolder),
+      ['01-a', '02-b', '03-c'],
+    );
+    const nodes = nodesOf(mode);
+    assert.ok(nodes.some((n) => n.type === 'subheader' && n.title === 'Sub'));
+    const deep = nodes.find((n) => n.relativePath === '01-a/02-sub/01-deep.md');
+    assert.equal(deep.indent, 1);
+  });
+
+  it('titles several modules after the course and numbers the slug', () => {
+    const mode = resolveMode(
+      [],
+      { module: ['03', '01'] },
+      threeModuleIndex(),
+      getLabels(),
+      course,
+    );
+    assert.equal(mode.defaultTitle, 'My Course');
+    assert.equal(mode.defaultSubtitle, 'A tagline');
+    assert.equal(mode.defaultSlug, 'my-course-01-03');
+  });
+
+  it('lets --title name the document and its slug', () => {
+    const mode = resolveMode(
+      [],
+      { module: ['01,02'], title: 'Part One' },
+      threeModuleIndex(),
+      getLabels(),
+      course,
+    );
+    assert.equal(mode.defaultTitle, 'Part One');
+    assert.equal(mode.defaultSlug, 'part-one-01-02');
+  });
+
+  it('puts --flagged across modules at item level and drops empty ones', () => {
+    const mode = resolveMode(
+      [],
+      { module: ['01-03'], flagged: true },
+      threeModuleIndex(),
+      getLabels(),
+      course,
+    );
+    assert.equal(mode.regime, 'course');
+    assert.deepEqual(
+      mode.groups.map((g) => g.moduleFolder),
+      ['01-a', '02-b'],
+    );
+    const nodes = nodesOf(mode);
+    assert.ok(nodes.every((n) => n.type === 'item'));
+    for (const n of nodes) assert.equal(n.indent, 0, n.relativePath);
+  });
+
+  it('refuses --flagged when no selected module has a flagged page', () => {
+    const index = threeModuleIndex();
+    assert.throws(
+      () => resolveMode([], { module: ['03'], flagged: true }, index),
+      /No items to export in module 03-c/,
+    );
+  });
+
+  it('refuses item paths next to -m instead of dropping them', () => {
+    // `export course/x.md -m 03`: the path comes first, so -m never swallows
+    // it, and the module branch used to export the module without the path.
+    assert.throws(
+      () =>
+        resolveMode(
+          ['course/01-a/01-loose.md'],
+          { module: ['03'] },
+          threeModuleIndex(),
+        ),
+      /Cannot mix -m with item paths: course\/01-a\/01-loose\.md/,
+    );
+  });
+
+  it('names the token it cannot resolve', () => {
+    assert.throws(
+      () => resolveMode([], { module: ['01', '99'] }, threeModuleIndex()),
+      /Module not found: 99/,
+    );
+  });
+});
+
 describe('npx course export -f md with a subfolder page', () => {
   // The path list resolves each argument against COURSE_DIR, a module-level
   // constant built from `process.cwd()` at require time, so it can only be

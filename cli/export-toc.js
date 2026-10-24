@@ -3,7 +3,7 @@ const path = require('path');
 
 const log = require('./logger');
 const { PROJECT_ROOT } = require('./project-root');
-const { COURSE_DIR } = require('./module-utils');
+const { COURSE_DIR, resolveModuleSelectors } = require('./module-utils');
 const { scanCourse } = require('../lib/convert/course-scanner');
 const { generateToc } = require('../lib/export/toc');
 const { loadCourseConfig } = require('../lib/config/course-config');
@@ -18,11 +18,17 @@ const EXPORTS_DIR = path.join(PROJECT_ROOT, 'exports');
 async function exportTocCmd(options = {}) {
   let modules = scanCourse(COURSE_DIR);
   if (options.module) {
-    modules = modules.filter((m) => m.folderName === options.module);
-    if (modules.length === 0) {
-      log.error(`[export-toc] Module not found: ${options.module}`);
+    let folders;
+    try {
+      folders = resolveModuleSelectors(
+        options.module,
+        modules.map((m) => m.folderName),
+      );
+    } catch (err) {
+      log.error(`[export-toc] ${err.message}`);
       process.exit(1);
     }
+    modules = modules.filter((m) => folders.includes(m.folderName));
   }
 
   const { title, tagline } = loadCourseConfig();

@@ -40,6 +40,23 @@
   noticing. Regenerate any study pack whose recipe lists a subfolder page with
   `/study-pack-build`.
 
+- `export -m` and `export-toc -m` take several modules, and take them by number.
+  `-m` used to want the one full folder name, so exporting modules 3 to 5 as one
+  document meant writing a TOC file. It now takes a folder name as before, a
+  number (`-m 03` or `-m 3`), a range (`-m 03-05`) or a comma list (`-m 03,05`),
+  and several values in one go (`-m 03 05`), as `sync`, `pull` and `status`
+  already did. The modules come out in course order, each once. A range skips a
+  missing number; one that matches nothing, an unknown number or name, and a
+  number two folders share are errors that name the culprit. Several modules
+  export as one document titled after the course, with a first-level heading per
+  module and their subfolder headings intact, to
+  `exports/<course>-03-04-05.pdf`; one module exports exactly as before. Because
+  `-m` now takes several values, `export -m 03-css course/x.md` reads the path
+  as a module and stops with `Not a module`, and `export course/x.md -m 03-css`
+  stops too, where both used to export the module and drop the path without a
+  word. A module and item paths never combined in one export. The VS Code
+  extension passes a full folder name and is unaffected.
+
 ## 1.6.0 (2026-10-24)
 
 - The tutorial's **Setting Up** pages say where Coursewright comes from. **What

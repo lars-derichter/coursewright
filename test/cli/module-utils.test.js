@@ -11,6 +11,7 @@ const {
   ask,
   createRL,
   prompt,
+  resolveModuleSelectors,
   toSlug,
   truncateSlug,
 } = require('../../cli/module-utils');
@@ -77,6 +78,144 @@ describe('toSlug length cap', () => {
 
   it('still yields a usable slug for a name that is all punctuation', () => {
     assert.equal(toSlug('--- ... ---'), '');
+  });
+});
+
+describe('resolveModuleSelectors', () => {
+  // 04 is missing on purpose, for the range-with-a-gap case.
+  const folders = [
+    '01-intro',
+    '02-html',
+    '03-css-basics',
+    '05-layout',
+    '06-forms',
+  ];
+  const resolve = (selectors, options) =>
+    resolveModuleSelectors(selectors, folders, options);
+
+  it('takes a two-digit number', () => {
+    assert.deepEqual(resolve(['03']), ['03-css-basics']);
+  });
+
+  it('takes a number without its leading zero', () => {
+    assert.deepEqual(resolve(['3']), ['03-css-basics']);
+  });
+
+  it('skips a gap in a range quietly', () => {
+    assert.deepEqual(resolve(['03-06']), [
+      '03-css-basics',
+      '05-layout',
+      '06-forms',
+    ]);
+  });
+
+  it('splits a value on commas', () => {
+    assert.deepEqual(resolve(['01,05']), ['01-intro', '05-layout']);
+  });
+
+  it('mixes numbers, ranges and full names across values', () => {
+    assert.deepEqual(resolve(['06', '01-02,03-css-basics']), [
+      '01-intro',
+      '02-html',
+      '03-css-basics',
+      '06-forms',
+    ]);
+  });
+
+  it('names each module once however often it was selected', () => {
+    assert.deepEqual(resolve(['03', '3', '02-03', '03-css-basics']), [
+      '02-html',
+      '03-css-basics',
+    ]);
+  });
+
+  it('returns course order whatever order they were typed in', () => {
+    assert.deepEqual(resolve(['06', '01', '03']), [
+      '01-intro',
+      '03-css-basics',
+      '06-forms',
+    ]);
+  });
+
+  it('accepts a single string as well as an array', () => {
+    assert.deepEqual(resolve('02'), ['02-html']);
+  });
+
+  it('tries the exact folder name before reading a range', () => {
+    const odd = ['01-intro', '02-html', '03-05', '04-js'];
+    assert.deepEqual(resolveModuleSelectors(['03-05'], odd), ['03-05']);
+  });
+
+  it('names an unknown number', () => {
+    assert.throws(() => resolve(['04']), /Module not found: 04/);
+  });
+
+  it('names an unknown folder name', () => {
+    assert.throws(() => resolve(['03-css']), /Module not found: 03-css/);
+  });
+
+  it('names the unknown token, not the whole value', () => {
+    assert.throws(() => resolve(['01,09']), /Module not found: 09$/);
+  });
+
+  it('says a path is not a module, since -m swallows what follows it', () => {
+    assert.throws(
+      () => resolve(['02', 'course/01-intro/01-welcome.md']),
+      /Not a module: course\/01-intro\/01-welcome\.md\. -m takes modules only/,
+    );
+  });
+
+  it('refuses a range that matches nothing', () => {
+    assert.throws(() => resolve(['10-12']), /No module in range 10-12/);
+  });
+
+  it('refuses a range that runs backwards', () => {
+    assert.throws(() => resolve(['05-03']), /runs backwards/);
+  });
+
+  it('names both folders behind an ambiguous number', () => {
+    const twice = ['01-intro', '03-css', '03-js'];
+    assert.throws(
+      () => resolveModuleSelectors(['03'], twice),
+      /ambiguous.*03-css, 03-js/,
+    );
+  });
+
+  it('takes every folder in a range, two sharing a number included', () => {
+    const twice = ['01-intro', '03-css', '03-js', '04-forms'];
+    assert.deepEqual(resolveModuleSelectors(['02-03'], twice), [
+      '03-css',
+      '03-js',
+    ]);
+  });
+
+  it('refuses an empty selection', () => {
+    assert.throws(() => resolve([' , ']), /No module given/);
+  });
+
+  describe('with single', () => {
+    it('refuses a range that selects more than one module', () => {
+      assert.throws(
+        () => resolve(['01-03'], { single: true }),
+        /takes one module.*01-intro, 02-html, 03-css-basics/,
+      );
+    });
+
+    it('refuses a list that selects more than one module', () => {
+      assert.throws(() => resolve(['01,02'], { single: true }), /one module/);
+    });
+
+    it('accepts a number', () => {
+      assert.deepEqual(resolve(['5'], { single: true }), ['05-layout']);
+    });
+
+    it('accepts a full folder name', () => {
+      assert.deepEqual(resolve(['06-forms'], { single: true }), ['06-forms']);
+    });
+
+    it('accepts a range that yields one module', () => {
+      assert.deepEqual(resolve(['04-05'], { single: true }), ['05-layout']);
+    });
   });
 });
 

@@ -330,7 +330,10 @@ program
   .description(
     'Export course materials to PDF, DOCX or plain markdown (PDF and DOCX need pandoc and typst)',
   )
-  .option('-m, --module <folder>', 'Export one full module')
+  .option(
+    '-m, --module <module...>',
+    'Export whole modules: a folder name, a number (03), a range (03-05) or a list (03,05)',
+  )
   .option('--toc <file>', 'Export the items listed in a TOC file')
   .option('--flagged', 'Only include items with frontmatter export: true')
   .option('-f, --format <format>', 'Output format: pdf, docx or md', 'pdf')
@@ -356,7 +359,10 @@ program
 program
   .command('export-toc')
   .description('Write a TOC file listing course items, for a curated export')
-  .option('-m, --module <folder>', 'Only list items from one module')
+  .option(
+    '-m, --module <module...>',
+    'Only list items from these modules: a folder name, a number (03), a range (03-05) or a list (03,05)',
+  )
   .option('--flagged', 'Only list items with frontmatter export: true')
   .option('--title <text>', 'Title for the TOC frontmatter')
   .option('--subtitle <text>', 'Subtitle for the TOC frontmatter')

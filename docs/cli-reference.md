@@ -423,21 +423,35 @@ and typst).
 npx course export [options] [paths...]
 ```
 
-| Flag                     | Description                                         |
-| ------------------------ | --------------------------------------------------- |
-| `-m, --module <folder>`  | Export one full module                              |
-| `--toc <file>`           | Export the items listed in a TOC file               |
-| `--flagged`              | Only include items with frontmatter `export: true`  |
-| `-f, --format <format>`  | Output format: pdf, docx or md (default: pdf)       |
-| `-o, --output <path>`    | Output file path                                    |
-| `--title <text>`         | Title-page title                                    |
-| `--subtitle <text>`      | Title-page subtitle                                 |
-| `--style <name\|path>`   | Export style to use, overriding `course.config.yml` |
-| `--template <path>`      | Override the Typst template                         |
-| `--reference-doc <path>` | Override the reference.docx                         |
-| `--var <key=value>`      | Pandoc variable (repeatable)                        |
-| `--keep-markdown`        | Also write the intermediate combined markdown       |
-| `--sample`               | Export the kitchen-sink style sample                |
+| Flag                       | Description                                                      |
+| -------------------------- | ---------------------------------------------------------------- |
+| `-m, --module <module...>` | Export whole modules: a folder name, a number, a range or a list |
+| `--toc <file>`             | Export the items listed in a TOC file                            |
+| `--flagged`                | Only include items with frontmatter `export: true`               |
+| `-f, --format <format>`    | Output format: pdf, docx or md (default: pdf)                    |
+| `-o, --output <path>`      | Output file path                                                 |
+| `--title <text>`           | Title-page title                                                 |
+| `--subtitle <text>`        | Title-page subtitle                                              |
+| `--style <name\|path>`     | Export style to use, overriding `course.config.yml`              |
+| `--template <path>`        | Override the Typst template                                      |
+| `--reference-doc <path>`   | Override the reference.docx                                      |
+| `--var <key=value>`        | Pandoc variable (repeatable)                                     |
+| `--keep-markdown`          | Also write the intermediate combined markdown                    |
+| `--sample`                 | Export the kitchen-sink style sample                             |
+
+`-m` names its modules in four forms, which mix freely:
+
+```bash
+npx course export -m 03-css-basics   # a folder name
+npx course export -m 03              # a number, the module whose folder starts 03
+npx course export -m 03-05           # a range, every module from 03 to 05
+npx course export -m 03,05           # a list, also written -m 03 05
+```
+
+One module is titled after the module; several take the course title and come
+out as one document with a heading per module. `-m` takes several values, so it
+swallows any path after it and stops with `Not a module`; a path before it is
+refused too, since a module and item paths do not combine in one export.
 
 `-f md` writes the same selection as a plain markdown file, needs neither pandoc
 nor typst, and ignores `--style`, `--template`, `--reference-doc`, `--var` and
@@ -459,13 +473,19 @@ Write a TOC file listing course items, for a curated export.
 npx course export-toc [options]
 ```
 
-| Flag                    | Description                                     |
-| ----------------------- | ----------------------------------------------- |
-| `-m, --module <folder>` | Only list items from one module                 |
-| `--flagged`             | Only list items with frontmatter `export: true` |
-| `--title <text>`        | Title for the TOC frontmatter                   |
-| `--subtitle <text>`     | Subtitle for the TOC frontmatter                |
-| `-o, --output <path>`   | Output file path (default `exports/toc.md`)     |
+| Flag                       | Description                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `-m, --module <module...>` | Only list items from these modules: a folder name, a number, a range or a list |
+| `--flagged`                | Only list items with frontmatter `export: true`                                |
+| `--title <text>`           | Title for the TOC frontmatter                                                  |
+| `--subtitle <text>`        | Subtitle for the TOC frontmatter                                               |
+| `-o, --output <path>`      | Output file path (default `exports/toc.md`)                                    |
+
+`-m` takes the same forms as it does for `export`:
+
+```bash
+npx course export-toc -m 03-05       # list the items of modules 03 to 05
+```
 
 ## Advanced
 
