@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.7.0 (2026-10-24)
 
 - A push puts the alert icons back when they are gone from Canvas. It used to
   trust `.canvas-sync.json` alone: an icon recorded under the current theme was
