@@ -4,6 +4,7 @@ const {
   COURSE_DIR,
   prompt,
   getExistingModules,
+  resolveOneModule,
   createRL,
   printModules,
 } = require('./module-utils');
@@ -58,12 +59,19 @@ async function deleteModule(options = {}) {
       );
       process.exit(1);
     }
+    // A number reaches the module as surely as its full name does, so a
+    // mistyped `-m 3` deletes a module where a mistyped name only failed. The
+    // `Deleted` line below names the folder either way, and the deletion is
+    // local only, so a commit has it back.
     const modules = getExistingModules();
-    sourceModule = modules.find((m) => m.folderName === options.module);
-    if (!sourceModule) {
-      console.error(
-        `[delete-module] Error: Module not found: ${options.module}`,
+    try {
+      const folder = resolveOneModule(
+        options.module,
+        modules.map((m) => m.folderName),
       );
+      sourceModule = modules.find((m) => m.folderName === folder);
+    } catch (err) {
+      console.error(`[delete-module] Error: ${err.message}`);
       process.exit(1);
     }
   } else {

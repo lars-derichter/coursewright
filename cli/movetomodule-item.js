@@ -7,6 +7,8 @@ const {
   getExistingModules,
   printModules,
   COURSE_DIR,
+  courseFolders,
+  resolveOneModule,
 } = require('./module-utils');
 const {
   getItems,
@@ -128,11 +130,20 @@ async function moveToModule(options = {}) {
       console.error(`[movetomodule] Error: Not found: ${itemPath}`);
       process.exit(1);
     }
-    let destDir = path.join(COURSE_DIR, options.toModule);
-    if (!fs.existsSync(destDir) || !fs.statSync(destDir).isDirectory()) {
-      console.error(
-        `[movetomodule] Error: Destination module not found: ${options.toModule}`,
+    let destDir;
+    try {
+      destDir = path.join(
+        COURSE_DIR,
+        resolveOneModule(options.toModule, courseFolders()),
       );
+    } catch (err) {
+      // The resolver's words, with the one this command has always used for
+      // a destination nothing answers to.
+      const message = err.message.replace(
+        /^Module not found/,
+        'Destination module not found',
+      );
+      console.error(`[movetomodule] Error: ${message}`);
       process.exit(1);
     }
     if (options.toSubsection) {

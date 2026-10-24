@@ -14,6 +14,7 @@ const {
   prompt,
   resolveModuleFilter,
   resolveModuleSelectors,
+  resolveOneModule,
   toSlug,
   truncateSlug,
 } = require('../../cli/module-utils');
@@ -244,6 +245,46 @@ describe('resolveModuleSelectors with passUnknownNames', () => {
 
   it('still says a path is not a module', () => {
     assert.throws(() => resolve(['course/01-intro']), /Not a module/);
+  });
+});
+
+describe('resolveOneModule', () => {
+  const folders = ['01-intro', '02-html', '03-css-basics', 'appendix'];
+
+  it('takes a number', () => {
+    assert.equal(resolveOneModule('3', folders), '03-css-basics');
+  });
+
+  it('takes a full folder name, a prefixless one included', () => {
+    assert.equal(resolveOneModule('02-html', folders), '02-html');
+    assert.equal(resolveOneModule('appendix', folders), 'appendix');
+  });
+
+  it('drops the trailing slash a shell completes a folder with', () => {
+    assert.equal(resolveOneModule('02-html/', folders), '02-html');
+  });
+
+  it('refuses a range that selects more than one module', () => {
+    assert.throws(
+      () => resolveOneModule('01-03', folders),
+      /takes one module, but 01-03 selects 3/,
+    );
+  });
+
+  it('names an unknown number', () => {
+    assert.throws(
+      () => resolveOneModule('09', folders),
+      /^Error: Module not found: 09$/,
+    );
+  });
+
+  // A single-valued option swallows nothing after it, so a path in one is just
+  // a name no folder has, refused in the words an unknown name always got.
+  it('refuses a path as an unknown name, not as a swallowed argument', () => {
+    assert.throws(
+      () => resolveOneModule('02-html/01-page.md', folders),
+      /^Error: Module not found: 02-html\/01-page\.md$/,
+    );
   });
 });
 

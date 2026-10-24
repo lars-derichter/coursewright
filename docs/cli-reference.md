@@ -202,10 +202,10 @@ Move a course module to a different position.
 npx course move-module [options]
 ```
 
-| Flag                      | Description                                                           |
-| ------------------------- | --------------------------------------------------------------------- |
-| `-m, --module <folder>`   | Module folder name (with `--position`, skips the interactive prompts) |
-| `-p, --position <number>` | New position                                                          |
+| Flag                      | Description                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| `-m, --module <folder>`   | Module folder name or number (with `--position`, skips the interactive prompts) |
+| `-p, --position <number>` | New position                                                                    |
 
 ### `rename-module`
 
@@ -215,10 +215,10 @@ Rename a course module.
 npx course rename-module [options]
 ```
 
-| Flag                    | Description                                                       |
-| ----------------------- | ----------------------------------------------------------------- |
-| `-m, --module <folder>` | Module folder name (with `--name`, skips the interactive prompts) |
-| `-n, --name <name>`     | New module name                                                   |
+| Flag                    | Description                                                                 |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `-m, --module <folder>` | Module folder name or number (with `--name`, skips the interactive prompts) |
+| `-n, --name <name>`     | New module name                                                             |
 
 ### `delete-module`
 
@@ -230,8 +230,16 @@ npx course delete-module [options]
 
 | Flag                    | Description                                                   |
 | ----------------------- | ------------------------------------------------------------- |
-| `-m, --module <folder>` | Module folder name (skips the interactive prompt)             |
+| `-m, --module <folder>` | Module folder name or number (skips the interactive prompt)   |
 | `-y, --yes`             | Confirm deletion without prompting (required with `--module`) |
+
+`-m` names one module, by its folder name or by its number (`-m 03` or `-m 3`).
+A range or list that selects more than one module is refused, and so is a number
+two folders share. A number makes a typo easier to commit:
+`npx course delete-module -m 3 -y` deletes whichever module is number 03, where
+a mistyped name only failed. The output names the folder it deleted. Nothing
+leaves your machine, so a commit is what brings it back; see
+[What Git Backs Up](backups.md#what-git-backs-up-and-what-it-does-not).
 
 None of the module commands touch Canvas; the object stays there, reported as
 `Orphaned on Canvas`, until a prune removes it.
@@ -250,16 +258,16 @@ module.
 npx course new-item [options]
 ```
 
-| Flag                        | Description                                                       |
-| --------------------------- | ----------------------------------------------------------------- |
-| `-m, --module <folder>`     | Module folder name (with `--type`, skips the interactive prompts) |
-| `-s, --subsection <folder>` | Subsection folder name within the module                          |
-| `-t, --type <type>`         | Item type: page, assignment, discussion, url, subsection, file    |
-| `-n, --name <name>`         | Item name (required unless `--type` is file)                      |
-| `-p, --position <number>`   | Position (default: after the last item)                           |
-| `--url <url>`               | External URL (for type url)                                       |
-| `--points <number>`         | Points possible (for type assignment)                             |
-| `--file <path>`             | Path to the file to add (for type file)                           |
+| Flag                        | Description                                                                 |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `-m, --module <folder>`     | Module folder name or number (with `--type`, skips the interactive prompts) |
+| `-s, --subsection <folder>` | Subsection folder name within the module                                    |
+| `-t, --type <type>`         | Item type: page, assignment, discussion, url, subsection, file              |
+| `-n, --name <name>`         | Item name (required unless `--type` is file)                                |
+| `-p, --position <number>`   | Position (default: after the last item)                                     |
+| `--url <url>`               | External URL (for type url)                                                 |
+| `--points <number>`         | Points possible (for type assignment)                                       |
+| `--file <path>`             | Path to the file to add (for type file)                                     |
 
 ### `move-item`
 
@@ -285,7 +293,7 @@ npx course movetomodule-item [options]
 | Flag                       | Description                                                          |
 | -------------------------- | -------------------------------------------------------------------- |
 | `--path <path>`            | Path to the item (with `--to-module`, skips the interactive prompts) |
-| `--to-module <folder>`     | Destination module folder name                                       |
+| `--to-module <folder>`     | Destination module folder name or number                             |
 | `--to-subsection <folder>` | Destination subsection folder name                                   |
 | `-p, --position <number>`  | Position in the destination (default: last)                          |
 
@@ -360,7 +368,7 @@ npx course build-glossary [options]
 
 | Flag                    | Description                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------ |
-| `-m, --module <name>`   | Only rebuild a specific module folder name                                           |
+| `-m, --module <name>`   | Only rebuild one module: a folder name or number                                     |
 | `-g, --glossary <path>` | Path to the glossary YAML file (default: `sources/reference-materials/glossary.yml`) |
 | `--check`               | Do not write; exit non-zero if any page is out of date                               |
 

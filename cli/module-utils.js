@@ -234,8 +234,10 @@ function resolveModuleSelectors(
       for (const m of matches) picked.add(m);
       continue;
     }
-    // `-m` is variadic, so a path typed after it lands here as a selector.
-    if (token.includes('/') || /\.md$/i.test(token)) {
+    // `-m` is variadic, so a path typed after it lands here as a selector. A
+    // single-valued option swallows nothing, so there a path is only a name no
+    // folder has, and falls through to the refusal that says so.
+    if (!single && (token.includes('/') || /\.md$/i.test(token))) {
       throw new Error(
         `Not a module: ${token}. -m takes modules only, and reads every ` +
           'argument after it as one.',
@@ -263,6 +265,39 @@ function resolveModuleSelectors(
     );
   }
   return result;
+}
+
+/**
+ * The one module a single-valued option names: `-m` on `move-module`,
+ * `rename-module`, `delete-module`, `new-item` and `build-glossary`, and
+ * `movetomodule-item --to-module`. A folder name, a number, or a range or list
+ * that comes down to one folder; more than one is refused, since each of these
+ * acts on exactly one. A trailing slash is dropped, because a shell completes a
+ * folder name with one and `new-item` used to take the value as a path.
+ *
+ * @param {string} selector - The raw option value.
+ * @param {string[]} folderNames - The folders the command can act on.
+ * @returns {string} The folder name.
+ * @throws {Error} What `resolveModuleSelectors` throws with `single`.
+ */
+function resolveOneModule(selector, folderNames) {
+  const typed = String(selector).replace(/[\\/]+$/, '');
+  return resolveModuleSelectors(typed, folderNames, { single: true })[0];
+}
+
+/**
+ * Every folder directly under `course/`, numbered or not, in name order, or
+ * none when there is no `course/`. What `new-item` and `movetomodule-item`
+ * choose a module from: both used to take any folder the name led to, and a
+ * folder without a prefix is still one a full name reaches.
+ */
+function courseFolders() {
+  if (!fs.existsSync(COURSE_DIR)) return [];
+  return fs
+    .readdirSync(COURSE_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
 }
 
 /**
@@ -478,6 +513,8 @@ module.exports = {
   prompt,
   getExistingModules,
   resolveModuleSelectors,
+  resolveOneModule,
+  courseFolders,
   moduleCandidates,
   resolveModuleFilter,
   pad,

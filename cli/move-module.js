@@ -2,6 +2,7 @@ const {
   COURSE_DIR,
   prompt,
   getExistingModules,
+  resolveOneModule,
   createRL,
   printModules,
 } = require('./module-utils');
@@ -16,9 +17,14 @@ async function moveModule(options = {}) {
   if (options.module && options.position) {
     // Non-interactive mode (VS Code)
     modules = getExistingModules();
-    sourceModule = modules.find((m) => m.folderName === options.module);
-    if (!sourceModule) {
-      console.error(`[move-module] Error: Module not found: ${options.module}`);
+    try {
+      const folder = resolveOneModule(
+        options.module,
+        modules.map((m) => m.folderName),
+      );
+      sourceModule = modules.find((m) => m.folderName === folder);
+    } catch (err) {
+      console.error(`[move-module] Error: ${err.message}`);
       process.exit(1);
     }
     targetPosition = parseInt(options.position, 10);

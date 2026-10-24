@@ -159,7 +159,7 @@ program
   .description('Move a course module to a different position')
   .option(
     '-m, --module <folder>',
-    'Module folder name (with --position, skips the interactive prompts)',
+    'Module folder name or number (with --position, skips the interactive prompts)',
   )
   .option('-p, --position <number>', 'New position')
   .action(require('./move-module'));
@@ -169,7 +169,7 @@ program
   .description('Rename a course module')
   .option(
     '-m, --module <folder>',
-    'Module folder name (with --name, skips the interactive prompts)',
+    'Module folder name or number (with --name, skips the interactive prompts)',
   )
   .option('-n, --name <name>', 'New module name')
   .action(require('./rename-module'));
@@ -179,7 +179,7 @@ program
   .description('Delete a course module and renumber remaining modules')
   .option(
     '-m, --module <folder>',
-    'Module folder name (skips the interactive prompt)',
+    'Module folder name or number (skips the interactive prompt)',
   )
   .option(
     '-y, --yes',
@@ -194,7 +194,7 @@ program
   )
   .option(
     '-m, --module <folder>',
-    'Module folder name (with --type, skips the interactive prompts)',
+    'Module folder name or number (with --type, skips the interactive prompts)',
   )
   .option(
     '-s, --subsection <folder>',
@@ -228,7 +228,7 @@ program
     '--path <path>',
     'Path to the item (with --to-module, skips the interactive prompts)',
   )
-  .option('--to-module <folder>', 'Destination module folder name')
+  .option('--to-module <folder>', 'Destination module folder name or number')
   .option('--to-subsection <folder>', 'Destination subsection folder name')
   .option(
     '-p, --position <number>',
@@ -307,7 +307,10 @@ program
   .description(
     'Regenerate module glossary pages from the canonical glossary YAML',
   )
-  .option('-m, --module <name>', 'Only rebuild a specific module folder name')
+  .option(
+    '-m, --module <name>',
+    'Only rebuild one module: a folder name or number',
+  )
   // No commander default: an unset flag is what tells the command to read the
   // glossary from the project root instead of from the working directory.
   .option(

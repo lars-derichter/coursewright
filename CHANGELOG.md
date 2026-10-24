@@ -69,6 +69,23 @@
   refusal when nothing answers to it, so a script or the VS Code extension
   passing one is unaffected.
 
+- `move-module -m`, `rename-module -m`, `delete-module -m`, `new-item -m`,
+  `movetomodule-item --to-module` and `build-glossary -m` take a module by
+  number. Each used to want the full folder name; `-m 03` or `-m 3` now finds
+  the module whose folder starts with 03. These commands act on one module, so a
+  range or list that selects more than one (`-m 03-05`, `-m 03,05`) stops with
+  `This command takes one module` and names the folders it would have meant, and
+  a number two folders share is refused the same way. An unknown name or number
+  stops with `Module not found`, as an unknown name always did; `build-glossary`
+  now words it that way too, in place of its own
+  `Module "…" not found in course/ directory`. A number makes a typo easier to
+  commit: `delete-module -m 3 -y` deletes whichever module is number 03, where a
+  mistyped name failed. It names the folder it deleted, as it always has, and it
+  deletes nothing on Canvas, so a commit brings the module back. `new-item -m`
+  and `--to-module` no longer take a path below the module, such as
+  `-m 03-css/02-sub`; `-s` and `--to-subsection` name the subfolder. The VS Code
+  extension passes a full folder name and is unaffected.
+
 ## 1.6.0 (2026-10-24)
 
 - The tutorial's **Setting Up** pages say where Coursewright comes from. **What

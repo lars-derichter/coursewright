@@ -8,10 +8,13 @@ themselves, the website, the exports, the Canvas sync, and the AI assistants.
 ### "no module named" and "Module not found"
 
 What `--module` (`-m`) takes is the folder name under `course/`, numeric prefix
-included, not the title Canvas shows. `sync`, `push`, `pull`, `status`, `export`
-and `export-toc` also take the number alone (`-m 01`), a range or a list. Three
-messages come back for the same typo, because three sets of commands answer the
-question differently:
+included, or the number alone (`-m 01`), not the title Canvas shows. `sync`,
+`push`, `pull`, `status`, `export` and `export-toc` also take a range or a list.
+The module commands, `new-item` and `build-glossary` act on one module, so they
+refuse a range or list that selects more than one with
+`This command takes one module`; `movetomodule-item --to-module` takes the same
+forms as their `-m`. Three messages come back for the same typo, because three
+sets of commands answer the question differently:
 
 ```text
 [status] Error: no module named 01-introduction — nothing under course/ and nothing in the Canvas course answers to it.

@@ -4,6 +4,7 @@ const {
   COURSE_DIR,
   prompt,
   getExistingModules,
+  resolveOneModule,
   pad,
   toSlug,
   createRL,
@@ -19,11 +20,14 @@ async function renameModule(options = {}) {
   if (options.module && options.name) {
     // Non-interactive mode (VS Code)
     const modules = getExistingModules();
-    sourceModule = modules.find((m) => m.folderName === options.module);
-    if (!sourceModule) {
-      console.error(
-        `[rename-module] Error: Module not found: ${options.module}`,
+    try {
+      const folder = resolveOneModule(
+        options.module,
+        modules.map((m) => m.folderName),
       );
+      sourceModule = modules.find((m) => m.folderName === folder);
+    } catch (err) {
+      console.error(`[rename-module] Error: ${err.message}`);
       process.exit(1);
     }
     newName = options.name;

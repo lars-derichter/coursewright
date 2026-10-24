@@ -4,7 +4,7 @@ const yaml = require('js-yaml');
 
 const log = require('./logger');
 const { PROJECT_ROOT } = require('./project-root');
-const { COURSE_DIR } = require('./module-utils');
+const { COURSE_DIR, resolveOneModule } = require('./module-utils');
 const { parseFrontmatter } = require('../lib/convert/frontmatter');
 const { formatMarkdown } = require('../lib/convert/format-markdown');
 const { LABEL_SETS } = require('../lib/config/labels');
@@ -203,7 +203,8 @@ function resolveLesson(folder, pageData, config) {
  * Regenerate every module's glossary page from the canonical glossary file.
  *
  * @param {object} options
- * @param {string} [options.module] - Limit to a single module folder name.
+ * @param {string} [options.module] - Limit to one module: its folder name or
+ *   its number.
  * @param {string} [options.glossary] - Path to the glossary YAML file,
  *   resolved from the working directory. Defaults to
  *   `sources/reference-materials/glossary.yml` under the project root.
@@ -245,11 +246,14 @@ async function buildGlossary(options = {}) {
     .map((d) => d.name)
     .sort();
 
-  if (options.module && !folders.includes(options.module)) {
-    log.error(
-      `[build-glossary] Module "${options.module}" not found in course/ directory.`,
-    );
-    process.exit(1);
+  let only = null;
+  if (options.module) {
+    try {
+      only = resolveOneModule(options.module, folders);
+    } catch (err) {
+      log.error(`[build-glossary] ${err.message}`);
+      process.exit(1);
+    }
   }
 
   let written = 0;
@@ -258,7 +262,7 @@ async function buildGlossary(options = {}) {
   const stale = [];
 
   for (const folder of folders) {
-    if (options.module && folder !== options.module) continue;
+    if (only && folder !== only) continue;
 
     try {
       const moduleDir = path.join(COURSE_DIR, folder);

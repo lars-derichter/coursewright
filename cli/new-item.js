@@ -1,6 +1,14 @@
 const fs = require('fs');
 const path = require('path');
-const { prompt, pad, toSlug, createRL, COURSE_DIR } = require('./module-utils');
+const {
+  prompt,
+  pad,
+  toSlug,
+  createRL,
+  COURSE_DIR,
+  courseFolders,
+  resolveOneModule,
+} = require('./module-utils');
 const {
   getItems,
   printItems,
@@ -245,9 +253,14 @@ async function newItem(options = {}) {
       );
       process.exit(1);
     }
-    let targetDir = path.join(COURSE_DIR, options.module);
-    if (!fs.existsSync(targetDir) || !fs.statSync(targetDir).isDirectory()) {
-      console.error(`[new-item] Error: Module not found: ${options.module}`);
+    let targetDir;
+    try {
+      targetDir = path.join(
+        COURSE_DIR,
+        resolveOneModule(options.module, courseFolders()),
+      );
+    } catch (err) {
+      console.error(`[new-item] Error: ${err.message}`);
       process.exit(1);
     }
     if (options.subsection) {
