@@ -21,6 +21,25 @@
   `/course-icons`, a page you have not changed since keeps its broken icon until
   you next edit and push it.
 
+- A selection export puts a page from a module subfolder at the same heading
+  level as every other page. A TOC file, a list of paths and `--flagged`, on the
+  whole course or with `-m`, all leave out the subfolder's own heading, but the
+  page under it kept the extra level it has in a whole-module export. In a PDF,
+  a Word document and an `-f md` file alike, such a page came out one level
+  below the other pages, under a heading that was never printed: across several
+  modules, a third-level heading straight under its module's title. Every page
+  of a selection is now a second-level heading under its module, or a
+  first-level heading when the selection covers one module. Whole-module and
+  whole-course exports are unchanged: they keep the subfolder headings, with the
+  pages one level below.
+
+  `/study-pack-build` always exports from a TOC file, and its check pairs the
+  raw and the compact pack page by page on those second-level headings, which is
+  also where the `verbatim:` prefixes apply. A verbatim page in a subfolder
+  escaped both, so the compact pack could condense it without the check
+  noticing. Regenerate any study pack whose recipe lists a subfolder page with
+  `/study-pack-build`.
+
 ## 1.6.0 (2026-10-24)
 
 - The tutorial's **Setting Up** pages say where Coursewright comes from. **What

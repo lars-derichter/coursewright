@@ -1,5 +1,6 @@
 const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -9,10 +10,15 @@ const {
   exportSlug,
   parseFormat,
   resolveMarkdownOutput,
+  resolveMode,
 } = require('../../cli/export');
+const { flattenItems } = require('../../lib/convert/course-scanner');
 const { getLabels } = require('../../lib/config/labels');
+const { buildPlainMarkdown } = require('../../lib/export/plain-markdown');
 const { rewriteCrossLinks } = require('../../lib/export/preprocess');
 const { SCHEMA_VERSION } = require('../../lib/sync/state');
+
+const CLI = path.join(__dirname, '..', '..', 'cli', 'index.js');
 
 describe('exportSlug', () => {
   const labels = getLabels('en');
@@ -299,5 +305,214 @@ describe('buildLinkContext', () => {
       buildLinkContext({ file, env: { CANVAS_COURSE_ID: '4242' } }),
       {},
     );
+  });
+});
+
+/** A scanned page node, in the shape scanCourse returns one. */
+function pageNode(relativePath, title, indent = 0) {
+  return {
+    type: 'item',
+    canvasType: 'page',
+    relativePath,
+    file: path.posix.basename(relativePath),
+    title,
+    rawMd: `${title} body.\n`,
+    frontmatter: { export: true },
+    indent,
+  };
+}
+
+/**
+ * The index indexCourse builds, for two modules: `01-a` holds a loose page and
+ * a subfolder `02-sub` with one page in it, `02-b` one loose page. Every page
+ * is flagged, so `--flagged` keeps them all.
+ */
+function subfolderIndex() {
+  const deep = pageNode('01-a/02-sub/01-deep.md', 'Deep', 1);
+  const modules = [
+    {
+      folderName: '01-a',
+      moduleName: 'A',
+      items: [
+        pageNode('01-a/01-loose.md', 'Loose'),
+        {
+          type: 'subheader',
+          folderName: '02-sub',
+          title: 'Sub',
+          items: [deep],
+        },
+      ],
+    },
+    {
+      folderName: '02-b',
+      moduleName: 'B',
+      items: [pageNode('02-b/01-other.md', 'Other')],
+    },
+  ];
+  const byPath = new Map();
+  for (const mod of modules) {
+    for (const node of flattenItems(mod.items)) {
+      if (node.type !== 'item') continue;
+      byPath.set(node.relativePath, {
+        item: node,
+        moduleFolder: mod.folderName,
+        moduleName: mod.moduleName,
+      });
+    }
+  }
+  return { index: { modules, byPath }, deep };
+}
+
+/** Every node a resolved mode will hand the builders, subheaders included. */
+function nodesOf(mode) {
+  return mode.groups.flatMap((g) => flattenItems(g.items));
+}
+
+describe('resolveMode with a subfolder page', () => {
+  // A selection flattens the course to items and so drops the subfolder's
+  // heading. The page under it used to keep its `indent: 1` all the same, and
+  // came out one level deeper than its neighbours under a heading that was
+  // never emitted: an H3 straight after the module's H1 in a course export.
+  // `/study-pack-build` pairs pages by H2, so that page escaped its check.
+  let dir;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw-export-mode-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  function assertItemLevel(mode) {
+    const nodes = nodesOf(mode);
+    assert.ok(
+      nodes.every((n) => n.type === 'item'),
+      'A selection carries no subheader',
+    );
+    assert.ok(
+      nodes.some((n) => n.relativePath === '01-a/02-sub/01-deep.md'),
+      'The subfolder page is in the selection',
+    );
+    for (const n of nodes) assert.equal(n.indent, 0, n.relativePath);
+  }
+
+  it('puts a --toc selection at item level', () => {
+    const { index } = subfolderIndex();
+    const toc = path.join(dir, 'toc.md');
+    fs.writeFileSync(
+      toc,
+      '- 01-a/01-loose.md\n- 01-a/02-sub/01-deep.md\n- 02-b/01-other.md\n',
+      'utf8',
+    );
+    assertItemLevel(resolveMode([], { toc }, index));
+  });
+
+  it('puts --flagged on the whole course at item level', () => {
+    const { index } = subfolderIndex();
+    assertItemLevel(resolveMode([], { flagged: true }, index));
+  });
+
+  it('puts -m --flagged at item level', () => {
+    const { index } = subfolderIndex();
+    assertItemLevel(resolveMode([], { module: '01-a', flagged: true }, index));
+  });
+
+  it('leaves the scanned node as it was', () => {
+    // byPath and the scanned modules share the node, and a whole-module export
+    // later in the same process would read the indent this one zeroed.
+    const { index, deep } = subfolderIndex();
+    resolveMode([], { flagged: true }, index);
+    resolveMode([], { module: '01-a', flagged: true }, index);
+    assert.equal(deep.indent, 1);
+    assert.equal(index.byPath.get('01-a/02-sub/01-deep.md').item, deep);
+  });
+
+  it('keeps the subheader and its indent in a whole-module export', () => {
+    const { index } = subfolderIndex();
+    const nodes = nodesOf(resolveMode([], { module: '01-a' }, index));
+    assert.ok(nodes.some((n) => n.type === 'subheader' && n.title === 'Sub'));
+    const deep = nodes.find((n) => n.relativePath === '01-a/02-sub/01-deep.md');
+    assert.equal(deep.indent, 1);
+  });
+
+  it('renders the subfolder page as H2 in a course-regime selection', () => {
+    // The symptom itself: module H1, every page H2, no H3 anywhere.
+    const { index } = subfolderIndex();
+    const mode = resolveMode([], { flagged: true }, index);
+    assert.equal(mode.regime, 'course');
+    const md = buildPlainMarkdown(
+      mode.groups,
+      { regime: mode.regime },
+      { courseDir: dir },
+    );
+    assert.match(md, /^## Deep$/m);
+    assert.doesNotMatch(md, /^###/m);
+    assert.doesNotMatch(md, /^## Sub$/m);
+  });
+});
+
+describe('npx course export -f md with a subfolder page', () => {
+  // The path list resolves each argument against COURSE_DIR, a module-level
+  // constant built from `process.cwd()` at require time, so it can only be
+  // driven from a project of its own, in a child process, the way
+  // `test/cli/move-item.test.js` does it.
+  let dir;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cw-export-md-'));
+    fs.writeFileSync(
+      path.join(dir, 'package.json'),
+      '{ "name": "fixture", "private": true }\n',
+      'utf8',
+    );
+    const files = {
+      '01-a/01-loose.md': 'Loose',
+      '01-a/02-sub/01-deep.md': 'Deep',
+      '02-b/01-other.md': 'Other',
+    };
+    for (const [rel, title] of Object.entries(files)) {
+      const file = path.join(dir, 'course', rel);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(
+        file,
+        `---\ntitle: ${title}\nexport: true\n---\n\n${title} body.\n`,
+        'utf8',
+      );
+    }
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  function exportMd(args) {
+    const out = path.join(dir, 'out.md');
+    const run = spawnSync(
+      process.execPath,
+      [CLI, 'export', '-f', 'md', ...args, '-o', out],
+      { cwd: dir, input: '', encoding: 'utf8', timeout: 30000 },
+    );
+    assert.equal(run.status, 0, run.stderr);
+    return fs
+      .readFileSync(out, 'utf8')
+      .split('\n')
+      .filter((line) => /^#+ /.test(line));
+  }
+
+  it('puts every page of a path list at H2 under its module', () => {
+    const headings = exportMd([
+      'course/01-a/01-loose.md',
+      'course/01-a/02-sub/01-deep.md',
+      'course/02-b/01-other.md',
+    ]);
+    // The document's own title line first, then module H1s and page H2s.
+    assert.deepEqual(headings.slice(1), [
+      '# A',
+      '## Loose',
+      '## Deep',
+      '# B',
+      '## Other',
+    ]);
   });
 });

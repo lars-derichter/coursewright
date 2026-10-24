@@ -133,7 +133,22 @@ function indexCourse() {
   return { modules, byPath };
 }
 
-/** Group loose item entries by their module, in course/module order. */
+/**
+ * An item lifted out of its subfolder, for a selection. A scanned node in a
+ * subfolder carries `indent: 1`, which the builders read as "one level below
+ * the subfolder's heading". A selection is flat, so that heading is never
+ * emitted, and the item would come out one level too deep under a heading
+ * that is not there. A copy, because `byPath` and the scanned modules share
+ * the node.
+ */
+function atItemLevel(item) {
+  return { ...item, indent: 0 };
+}
+
+/**
+ * Group loose item entries by their module, in course/module order. The groups
+ * hold items only, no subheaders, so every item sits at item level.
+ */
 function groupByModule(entries, modules) {
   const order = modules.map((m) => m.folderName);
   const byFolder = new Map();
@@ -145,7 +160,7 @@ function groupByModule(entries, modules) {
         items: [],
       });
     }
-    byFolder.get(e.moduleFolder).items.push(e.item);
+    byFolder.get(e.moduleFolder).items.push(atItemLevel(e.item));
   }
   return order.filter((f) => byFolder.has(f)).map((f) => byFolder.get(f));
 }
@@ -264,12 +279,17 @@ function resolveMode(paths, options, index, labels = getLabels(), course = {}) {
   if (moduleFolder) {
     const mod = modules.find((m) => m.folderName === moduleFolder);
     if (!mod) throw new Error(`Module not found: ${moduleFolder}`);
+    // The whole module keeps its subheaders, and with them the indent of the
+    // items under each. A flagged pick flattens them away, so it lifts its
+    // items to item level as groupByModule does.
     let items = mod.items;
     if (options.flagged) {
-      items = flattenItems(items).filter(
-        (n) =>
-          n.type === 'item' && n.frontmatter && n.frontmatter.export === true,
-      );
+      items = flattenItems(items)
+        .filter(
+          (n) =>
+            n.type === 'item' && n.frontmatter && n.frontmatter.export === true,
+        )
+        .map(atItemLevel);
     }
     if (flattenItems(items).every((n) => n.type !== 'item')) {
       throw new Error(`No items to export in module ${moduleFolder}.`);

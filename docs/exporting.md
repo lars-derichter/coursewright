@@ -104,10 +104,13 @@ yourself as one file instead of clicking through the site. The document opens
 with a header: the title as a first-level heading, the subtitle and the course
 name on one italic line, then the date. The items follow at the same heading
 levels the PDF uses, module titles as H1 and items as H2 for a whole course,
-items as H1 for a module. Each item heading is built from its `title` in the
-frontmatter, page-type emoji included, exactly as the PDF builds it. A single
-item gets no header, the way it gets no title page in PDF, and its own title is
-the one H1 in the file.
+items as H1 for a module. In a whole module or course, a subfolder's heading
+sits at item level with its pages one level below it; a selection (a TOC file, a
+list of paths or `--flagged`) has no subfolder headings and puts every page at
+item level. Each item heading is built from its `title` in the frontmatter,
+page-type emoji included, exactly as the PDF builds it. A single item gets no
+header, the way it gets no title page in PDF, and its own title is the one H1 in
+the file.
 
 Everything the chatbot cannot follow is taken out. Images become their alt text
 in italics, and disappear when they have none. Links to other pages, to
