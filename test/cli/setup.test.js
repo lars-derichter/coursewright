@@ -1,10 +1,17 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const yaml = require('js-yaml');
 
 const {
   rewriteCourseConfig,
   setScalar,
+  setBlockScalar,
   setExportStyle,
+  canonicalLicense,
+  footerNotice,
   yamlScalar,
   templateFor,
   isPristine,
@@ -13,6 +20,10 @@ const {
   isToolingIndex,
   nextSteps,
 } = require('../../cli/setup');
+const {
+  loadCourseConfig,
+  _clearCache,
+} = require('../../lib/config/course-config');
 
 /** A trimmed stand-in for the shipped course.config.yml. */
 const SHIPPED = `# Per-course settings: name, language, look, and label overrides.
@@ -131,6 +142,120 @@ describe('setExportStyle', () => {
   });
 });
 
+/** The footer block as course.config.yml ships it, with the commented labels
+ *  that share its key names below. */
+const WITH_FOOTER = `title: Coursewright
+
+# PDF and DOCX layout.
+export:
+  style: generic
+  # number_headings: true
+
+# The footer under every page of the course website.
+footer:
+  # One line of markdown: links, a badge image, {year} for the current year.
+  # Unset, it reads "Copyright © {year}"; an empty string shows no notice.
+  # text: "© {year} Your Name, Your Institution"
+  # A Creative Commons licence button. One of CC-BY-4.0, ..., or none.
+  license: CC-BY-NC-SA-4.0
+  # The "Made with Coursewright" link. false hides it.
+  # credit: false
+
+language: en
+
+# labels:
+#   site:
+#     credit: "Built with {coursewright}"
+#     license: "Shared under {license}"
+`;
+
+const NOTICE = '© {year} Jane Doe, [Example: University](https://example.edu)';
+
+describe('setBlockScalar', () => {
+  const comments = (text) =>
+    text.split('\n').filter((l) => /^\s*#/.test(l) && !/# text:/.test(l));
+
+  it('replaces a key the block already sets', () => {
+    const out = setBlockScalar(WITH_FOOTER, 'footer', 'license', 'CC-BY-4.0');
+    assert.match(out, /^ {2}license: CC-BY-4\.0$/m);
+    assert.doesNotMatch(out, /CC-BY-NC-SA-4\.0$/m);
+  });
+
+  it('uncomments a key the block ships commented out', () => {
+    const out = setBlockScalar(WITH_FOOTER, 'footer', 'text', 'Hi');
+    assert.match(
+      out,
+      /^ {2}# Unset, it reads[^\n]*\n {2}text: Hi\n {2}# A Creative/m,
+    );
+    assert.doesNotMatch(out, /# text:/);
+  });
+
+  it('never touches a commented key outside the block', () => {
+    const source = WITH_FOOTER.replace('  license: CC-BY-NC-SA-4.0\n', '');
+    const out = setBlockScalar(source, 'footer', 'license', 'CC0-1.0');
+    assert.match(out, /^footer:\n {2}license: CC0-1\.0$/m);
+    assert.match(out, /^# {5}license: "Shared under \{license\}"$/m);
+    assert.equal(yaml.load(out).labels, undefined);
+  });
+
+  it('keeps every other comment in the file', () => {
+    const out = setBlockScalar(WITH_FOOTER, 'footer', 'text', NOTICE);
+    assert.deepEqual(comments(out), comments(WITH_FOOTER));
+  });
+
+  it('adds the key as the first entry when the block lacks it', () => {
+    const out = setBlockScalar(
+      'footer:\n  credit: false\n',
+      'footer',
+      'text',
+      'Hi',
+    );
+    assert.equal(out, 'footer:\n  text: Hi\n  credit: false\n');
+  });
+
+  it('creates the block when it is missing', () => {
+    const out = setBlockScalar('title: X\n', 'footer', 'license', 'CC0-1.0');
+    assert.equal(out, 'title: X\n\nfooter:\n  license: CC0-1.0\n');
+  });
+
+  it('leaves a same-named key in another block alone', () => {
+    const source = 'export:\n  style: generic\n\nfooter:\n  license: none\n';
+    const out = setBlockScalar(source, 'export', 'license', 'x');
+    assert.match(out, /^export:\n {2}license: x\n {2}style: generic$/m);
+    assert.match(out, /^footer:\n {2}license: none$/m);
+  });
+
+  it('is idempotent', () => {
+    const once = setBlockScalar(WITH_FOOTER, 'footer', 'text', NOTICE);
+    assert.equal(setBlockScalar(once, 'footer', 'text', NOTICE), once);
+  });
+});
+
+describe('canonicalLicense', () => {
+  it('spells a licence the way LICENSES does, ignoring case', () => {
+    assert.equal(canonicalLicense('cc-by-4.0'), 'CC-BY-4.0');
+    assert.equal(canonicalLicense(' cc0-1.0 '), 'CC0-1.0');
+  });
+
+  it('accepts none in any case', () => {
+    assert.equal(canonicalLicense('None'), 'none');
+  });
+
+  it('rejects anything else', () => {
+    assert.equal(canonicalLicense('MIT'), null);
+  });
+});
+
+describe('footerNotice', () => {
+  it('reads none as no notice', () => {
+    assert.equal(footerNotice('NONE'), '');
+  });
+
+  it('passes a notice through, trimmed', () => {
+    assert.equal(footerNotice('  © {year} Me '), '© {year} Me');
+  });
+});
+
 describe('rewriteCourseConfig', () => {
   it('applies every answered value in one pass', () => {
     const out = rewriteCourseConfig(SHIPPED, {
@@ -161,6 +286,51 @@ describe('rewriteCourseConfig', () => {
   it('leaves the tagline commented when it is not answered', () => {
     const out = rewriteCourseConfig(SHIPPED, { title: 'X' });
     assert.match(out, /^# tagline: Bachelor 1, semester 2$/m);
+  });
+
+  it('writes the footer notice and licence, quoted so YAML reads them back', () => {
+    const out = rewriteCourseConfig(WITH_FOOTER, {
+      title: 'Programmeren 1',
+      footerText: NOTICE,
+      footerLicense: 'CC-BY-4.0',
+    });
+    const data = yaml.load(out);
+    assert.equal(data.footer.text, NOTICE);
+    assert.equal(data.footer.license, 'CC-BY-4.0');
+    assert.equal(data.footer.credit, undefined);
+    assert.equal(data.labels, undefined);
+    assert.match(out, /^title: Programmeren 1$/m);
+    assert.match(out, /^# {5}license: "Shared under \{license\}"$/m);
+  });
+
+  it('writes an empty notice as an empty string', () => {
+    const out = rewriteCourseConfig(WITH_FOOTER, { footerText: '' });
+    assert.match(out, /^ {2}text: ""$/m);
+    assert.equal(yaml.load(out).footer.text, '');
+  });
+
+  it('resolves the written footer through loadCourseConfig', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'setup-footer-test-'));
+    try {
+      const out = rewriteCourseConfig(WITH_FOOTER, {
+        footerText: NOTICE,
+        footerLicense: 'none',
+      });
+      fs.writeFileSync(path.join(dir, 'course.config.yml'), out, 'utf8');
+      _clearCache();
+      const { footer } = loadCourseConfig(dir);
+      assert.deepEqual(
+        { ...footer },
+        {
+          text: NOTICE,
+          license: null,
+          credit: true,
+        },
+      );
+    } finally {
+      _clearCache();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

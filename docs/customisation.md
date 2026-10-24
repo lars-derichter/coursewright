@@ -319,6 +319,11 @@ course language and can be overridden under `labels.site` (`credit`, with
 `{license}` for the licence name). The footer's colours come from the theme,
 like everything else on the site.
 
+The wizard asks for the notice and the licence, offering the current ones as
+defaults; answer `none` to either for no notice or no button. It writes an entry
+only when your answer changes it, so a notice you leave at "Copyright © {year}"
+stays the default rather than being written out. `credit` it leaves to you.
+
 ## Pre-Ship Checks
 
 `npx course check` runs every check a course should pass before a push, and

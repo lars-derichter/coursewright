@@ -29,6 +29,18 @@
   the identifier of the licence in your `course/LICENSE.md`.
   [The Site Footer](docs/customisation.md#the-site-footer) has the details.
 
+- `npx course setup` asks for the website footer's notice and licence, after the
+  export style. The wizard used to leave the new `footer:` block alone, so the
+  one place a course states who wrote it and under which licence had to be found
+  and edited by hand. It now offers the current notice as the default (answer
+  `none` for no notice) and lets you pick the licence button from the seven
+  Creative Commons licences or `none`, with a reminder to keep it in step with
+  `course/LICENSE.md`. An entry is written only when your answer changes it, and
+  every comment in `course.config.yml` survives. Two new flags answer the
+  questions from a script: `--footer <text>` and `--license <id|none>`, which
+  stops with an error naming the valid identifiers on anything else. The summary
+  line after the run names the licence.
+
 ## 1.5.4 (2026-10-24)
 
 - The dependencies are upgraded: dotenv to 18, `@vscode/vsce` to 4, and

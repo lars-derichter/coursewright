@@ -26,6 +26,7 @@ const {
   _clearCache,
 } = require('../lib/config/course-config');
 const { parseFrontmatter } = require('../lib/convert/frontmatter');
+const { LICENSES, findLicense } = require('../lib/config/footer');
 
 const CONFIG_FILE = path.join(PROJECT_ROOT, 'course.config.yml');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
@@ -81,6 +82,13 @@ const WRITING_STYLES = [
   { id: 'nl', label: 'Nederlands, variant Nederland' },
 ];
 
+/** The footer licence choices: every button lib/config/footer.js ships, and
+ *  `none` for no button. */
+const LICENSE_CHOICES = [
+  ...Object.keys(LICENSES).map((id) => ({ id })),
+  { id: 'none', label: 'no licence button' },
+];
+
 /** The H1 of the tooling's own README, which a course replaces. The old
  * project name stays recognised so a clone from before the rename still
  * gets the replacement offer after pulling the update. */
@@ -130,31 +138,56 @@ function setScalar(source, key, value) {
 }
 
 /**
- * Set `style:` inside the `export:` block, creating either as needed.
+ * Set a scalar key inside a top-level block (`export:`, `footer:`), keeping
+ * the file's comments and layout.
+ *
+ * Replaces the key where the block already sets it, uncomments it where the
+ * block ships it commented out (`  # text: ...`), and otherwise adds it as the
+ * block's first entry; a missing block is appended with the key in it. Only
+ * lines inside the block are candidates, and the commented form has to be
+ * indented, so a column-0 comment such as the commented `labels:` block below
+ * it is never picked up.
  */
-function setExportStyle(source, value) {
-  const rendered = `style: ${yamlScalar(value)}`;
+function setBlockScalar(source, block, key, value) {
+  const rendered = `${key}: ${yamlScalar(value)}`;
   const lines = source.split('\n');
-  const start = lines.findIndex((line) => /^export:[ \t]*$/.test(line));
+  const header = new RegExp(`^${block}:[ \\t]*$`);
+  const start = lines.findIndex((line) => header.test(line));
 
   if (start === -1) {
-    return `${source.replace(/\n*$/, '')}\n\nexport:\n  ${rendered}\n`;
+    return `${source.replace(/\n*$/, '')}\n\n${block}:\n  ${rendered}\n`;
   }
 
-  for (let i = start + 1; i < lines.length; i += 1) {
-    const line = lines[i];
+  let end = start + 1;
+  for (; end < lines.length; end += 1) {
+    const line = lines[end];
     if (/^\s*$/.test(line)) break; // a blank line ends the block
     if (/^\s*#/.test(line)) continue;
     if (!/^[ \t]+/.test(line)) break; // back to column 0: block ended
-    const match = line.match(/^([ \t]+)style:[^\n]*$/);
-    if (match) {
-      lines[i] = `${match[1]}${rendered}`;
-      return lines.join('\n');
+  }
+
+  // An active key wins over a commented one, wherever the two sit.
+  const active = new RegExp(`^([ \\t]+)${key}:`);
+  const commented = new RegExp(`^([ \\t]+)#[ \\t]?${key}:`);
+  for (const pattern of [active, commented]) {
+    for (let i = start + 1; i < end; i += 1) {
+      const match = lines[i].match(pattern);
+      if (match) {
+        lines[i] = `${match[1]}${rendered}`;
+        return lines.join('\n');
+      }
     }
   }
 
   lines.splice(start + 1, 0, `  ${rendered}`);
   return lines.join('\n');
+}
+
+/**
+ * Set `style:` inside the `export:` block, creating either as needed.
+ */
+function setExportStyle(source, value) {
+  return setBlockScalar(source, 'export', 'style', value);
 }
 
 /**
@@ -171,7 +204,32 @@ function rewriteCourseConfig(source, values = {}) {
   if (values.theme !== undefined) out = setScalar(out, 'theme', values.theme);
   if (values.exportStyle !== undefined)
     out = setExportStyle(out, values.exportStyle);
+  if (values.footerText !== undefined)
+    out = setBlockScalar(out, 'footer', 'text', values.footerText);
+  if (values.footerLicense !== undefined)
+    out = setBlockScalar(out, 'footer', 'license', values.footerLicense);
   return out;
+}
+
+/**
+ * The licence an answer names, spelled as LICENSES spells it, `none` for no
+ * button, or null for anything else. Case is ignored, as course-config.js
+ * ignores it when it reads the file back.
+ */
+function canonicalLicense(value) {
+  const found = findLicense(value);
+  if (found) return found;
+  return String(value).trim().toLowerCase() === 'none' ? 'none' : null;
+}
+
+/**
+ * The footer notice an answer stands for. `none` is the way to ask for no
+ * notice at all, since an empty answer to a prompt takes its default; the
+ * file spells that as an empty string.
+ */
+function footerNotice(answer) {
+  const text = String(answer).trim();
+  return text.toLowerCase() === 'none' ? '' : text;
 }
 
 /**
@@ -443,6 +501,17 @@ async function setup(options = {}) {
     }
     removeTutorialFlag = options.tutorial === 'remove';
   }
+  let licenseFlag;
+  if (options.license !== undefined) {
+    licenseFlag = canonicalLicense(options.license);
+    if (!licenseFlag) {
+      const ids = LICENSE_CHOICES.map((choice) => choice.id).join(', ');
+      log.error(
+        `[setup] Error: --license takes one of ${ids}, not "${options.license}".`,
+      );
+      process.exit(1);
+    }
+  }
 
   const current = loadCourseConfig();
 
@@ -617,9 +686,37 @@ async function setup(options = {}) {
         )
       : options.exportStyle || current.export.style;
 
+    // 8b. Footer notice. The prompt shows "none" rather than nothing when the
+    //     course has no notice, because an empty answer takes the default.
+    const noticeDefault =
+      options.footer !== undefined
+        ? footerNotice(options.footer)
+        : current.footer.text;
+    const footerText = interactive
+      ? footerNotice(
+          await prompt(
+            rl,
+            '\nFooter notice on the website (markdown, {year} for the year; "none" for no notice)',
+            noticeDefault || 'none',
+          ),
+        )
+      : noticeDefault;
+
+    // 8c. Footer licence button.
+    const currentLicense = current.footer.license || 'none';
+    const footerLicense = interactive
+      ? await choose(
+          rl,
+          'Licence button in the website footer (keep it in step with course/LICENSE.md):',
+          LICENSE_CHOICES,
+          licenseFlag || currentLicense,
+        )
+      : licenseFlag || currentLicense;
+
     // Write the configuration. An empty tagline is only written out when there
     // is an existing one to clear, so a course without one keeps the key
-    // commented out as it ships.
+    // commented out as it ships. The footer entries are only written when they
+    // change, so a notice or licence left at its default stays a default.
     const writeTagline = Boolean(tagline) || Boolean(current.tagline);
     const updated = rewriteCourseConfig(source, {
       language,
@@ -627,6 +724,9 @@ async function setup(options = {}) {
       tagline: writeTagline ? tagline : undefined,
       theme,
       exportStyle,
+      footerText: footerText !== current.footer.text ? footerText : undefined,
+      footerLicense:
+        footerLicense !== currentLicense ? footerLicense : undefined,
     });
     if (updated !== source) {
       fs.writeFileSync(CONFIG_FILE, updated, 'utf8');
@@ -640,7 +740,8 @@ async function setup(options = {}) {
     const resolved = loadCourseConfig();
     log.info(
       `[setup]   title: ${resolved.title} | language: ${resolved.language} | ` +
-        `theme: ${resolved.theme} | export style: ${resolved.export.style}`,
+        `theme: ${resolved.theme} | export style: ${resolved.export.style} | ` +
+        `licence: ${resolved.footer.license || 'none'}`,
     );
 
     // 9. The built-in tutorial module.
@@ -699,7 +800,10 @@ async function setup(options = {}) {
 module.exports = setup;
 module.exports.rewriteCourseConfig = rewriteCourseConfig;
 module.exports.setScalar = setScalar;
+module.exports.setBlockScalar = setBlockScalar;
 module.exports.setExportStyle = setExportStyle;
+module.exports.canonicalLicense = canonicalLicense;
+module.exports.footerNotice = footerNotice;
 module.exports.yamlScalar = yamlScalar;
 module.exports.templateFor = templateFor;
 module.exports.isPristine = isPristine;

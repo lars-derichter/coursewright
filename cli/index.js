@@ -45,6 +45,11 @@ program
   .option('--tagline <text>', 'One-line course descriptor')
   .option('--theme <name>', 'Colour theme name or path')
   .option('--export-style <name>', 'Export style folder name or path')
+  .option(
+    '--footer <text>',
+    'Website footer notice, markdown ("none" for none)',
+  )
+  .option('--license <id|none>', 'Footer licence button (an SPDX id, or none)')
   .option('--readme <copy|keep>', 'Install the course README template')
   .option(
     '--course-home <copy|keep>',

@@ -19,9 +19,12 @@ only what the author asks for.
 
 1. **Read what is already set.** In order:
    - `course.config.yml`: `title`, `tagline`, `language`, `theme`,
-     `export.style`. Anything other than the shipped defaults
-     (`title: Coursewright`, `language: en`, `theme: github`,
-     `export.style: generic`) is an answer the author already gave.
+     `export.style`, `footer.text`, `footer.license`. Anything other than the
+     shipped defaults (`title: Coursewright`, `language: en`, `theme: github`,
+     `export.style: generic`, no `footer.text`,
+     `footer.license: CC-BY-NC-SA-4.0`) is an answer the author already gave.
+   - `course/LICENSE.md`: which licence the course content is under, so the
+     footer's licence button can match it.
    - `README.md`: if its H1 is still `# Coursewright`, it is the tooling's
      README and needs replacing. Otherwise it is the author's, and the course
      name, overview and module table in it are facts, not placeholders.
@@ -42,6 +45,13 @@ only what the author asks for.
      what each prescribes rather than making them guess.
    - Theme and export style, from what `src/css/themes/` and `export-styles/`
      actually contain.
+   - The website footer: a one-line notice in markdown (who wrote the course,
+     and where; `{year}` stands for the year of the build), or `none` to keep no
+     notice, and the licence button: one of the Creative Commons SPDX ids
+     [The Site Footer](../../../docs/customisation.md#the-site-footer) lists, or
+     `none`. Propose the licence that `course/LICENSE.md` declares, and flag it
+     when the author picks another, since the button and that file must name the
+     same licence.
    - Whether to replace the course home page (`course/index.md`) with the
      language-matched template, carrying the answer into step 3's flags: under
      `--yes` the command leaves the file alone unless `--course-home copy` says
@@ -71,13 +81,15 @@ only what the author asks for.
    ```bash
    npx course setup --yes --language <lang> --title <title> --tagline <text> \
      --theme <name> --export-style <name> \
+     --footer <text|none> --license <id|none> \
      --readme <copy|keep> --course-home <copy|keep> \
      --course-context <copy|keep> --writing-style <variant|keep> \
      --tutorial <keep|remove>
    ```
 
-   `--tagline` is the only way to set the descriptor under `--yes`; leave the
-   flag out and whatever `course.config.yml` already holds stands.
+   `--tagline`, `--footer` and `--license` are the only way to set those values
+   under `--yes`; leave a flag out and whatever `course.config.yml` already
+   holds stands.
 
    Report what it wrote and what it left alone. If it refused a destination, do
    not work around it by writing the file yourself. Tell the author and ask.

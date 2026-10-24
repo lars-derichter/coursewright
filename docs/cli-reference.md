@@ -30,6 +30,8 @@ npx course setup [options]
 | `--tagline <text>`              | One-line course descriptor                                |
 | `--theme <name>`                | Colour theme name or path                                 |
 | `--export-style <name>`         | Export style folder name or path                          |
+| `--footer <text>`               | Website footer notice, markdown ("none" for none)         |
+| `--license <id\|none>`          | Footer licence button (an SPDX id, or none)               |
 | `--readme <copy\|keep>`         | Install the course README template                        |
 | `--course-home <copy\|keep>`    | Install the course home page template (`course/index.md`) |
 | `--course-context <copy\|keep>` | Install the course-context template                       |
@@ -41,6 +43,13 @@ npx course setup [options]
 Run with no flags for the interactive wizard. `-y` is what makes it scriptable:
 every question needs a matching flag or the run stops with an error rather than
 hanging.
+
+`--footer` and `--license` set the two footer entries
+[The Site Footer](customisation.md#the-site-footer) describes. `--footer none`,
+or an empty string, writes `text: ""` for no notice at all. `--license` takes
+one of the identifiers listed there, in any case, or `none`, and stops with an
+error naming them on anything else. Leave either flag out and its entry stays as
+it is.
 
 ### `init`
 

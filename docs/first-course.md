@@ -206,9 +206,10 @@ that always works.
 
 The wizard runs in the shared **Coursewright** terminal and asks its questions
 there: your course name, the language of the labels students see, the look of
-the site and the exports, and whether to remove the built-in tutorial module. It
-ends by offering to connect Canvas; skip that for now, the Canvas route in step
-12 comes back to it. Answer, and it writes the configuration for you.
+the site and the exports, the notice and licence in the website's footer, and
+whether to remove the built-in tutorial module. It ends by offering to connect
+Canvas; skip that for now, the Canvas route in step 12 comes back to it. Answer,
+and it writes the configuration for you.
 
 > [!TIP]
 >
