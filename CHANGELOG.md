@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.6.0 (2026-10-24)
 
 - The tutorial's **Setting Up** pages say where Coursewright comes from. **What
   You Need** opened with the four installs and never named the project, and
