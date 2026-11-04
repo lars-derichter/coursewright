@@ -7,6 +7,19 @@
   and course-check workflows a course project inherits. The requirement does not
   change: Node 24 still works, so a course author on 24 need do nothing.
 
+- The dependencies are upgraded to their newest releases, all within the range
+  `package.json` allows: `@vscode/vsce` to 4.1.0, eslint to 10.14.0, globals to
+  17.14.0, marked to 18.1.3 and turndown to 7.2.5, along with the transitive
+  tree. marked's two releases fix parser bugs, so unusual markdown (emphasis
+  delimiter runs, lazy lines in a blockquote, link labels) can render
+  differently. The pages shipped in `course/` render exactly as before, and a
+  page already on Canvas changes only when a push next renders it. Run
+  `npm install` after the upstream update, as the update script reminds you to.
+  `npm audit` still reports advisories in the Docusaurus build and preview
+  toolchain and in eslint and `@vscode/vsce`. `npm audit fix` still resolves the
+  Docusaurus ones by nesting an older Docusaurus, and the only fix it offers for
+  the other two is a downgrade, so leave it alone.
+
 ## 1.7.0 (2026-10-24)
 
 - A push puts the alert icons back when they are gone from Canvas. It used to
