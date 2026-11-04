@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `.node-version` and `.tool-versions` pin Node 26.13.0, the current LTS
+  release, and the GitHub Actions workflows run on Node 26, including the deploy
+  and course-check workflows a course project inherits. The requirement does not
+  change: Node 24 still works, so a course author on 24 need do nothing.
+
 ## 1.7.0 (2026-10-24)
 
 - A push puts the alert icons back when they are gone from Canvas. It used to

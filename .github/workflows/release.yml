@@ -42,7 +42,7 @@ jobs:
           ref: ${{ inputs.tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 26
 
       # No `npm ci`: scripts/changelog-section.js requires Node built-ins only,
       # so the notes are cut before anything is installed.
