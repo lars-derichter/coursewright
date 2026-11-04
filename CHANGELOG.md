@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.7.1 (2026-11-04)
 
 - `.node-version` and `.tool-versions` pin Node 26.13.0, the current LTS
   release, and the GitHub Actions workflows run on Node 26, including the deploy
