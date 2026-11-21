@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.0 (2026-11-21)
 
 - A new skill, `/upstream-update`, pulls a Coursewright release into a course
   project. `update-from-upstream.sh` settles every file changed on both sides
