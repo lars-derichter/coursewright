@@ -57,6 +57,12 @@ The script:
 5. Tags the merge point so you can see
    [which upstream version you're on](#which-version-you-are-on).
 
+With an AI assistant, `/upstream-update` runs the script for you and also does
+what a squash merge cannot: it re-applies local edits to tooling files that a
+conflict resolved to upstream dropped, carries upstream's changes to the
+protected files into your copies, fixes what the release's new rules flag in
+`course/`, and runs every check. See [AI assistants](ai-assistants.md#project).
+
 After running the script, install any updated dependencies:
 
 ```bash
@@ -238,6 +244,9 @@ git checkout HEAD~1 -- path/to/file
 
 # Or selectively re-apply your edits on top of the upstream version
 ```
+
+Restoring the whole file also throws away whatever upstream changed in it.
+`/upstream-update` re-applies only your own hunks instead.
 
 > [!TIP]
 >

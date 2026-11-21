@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- A new skill, `/upstream-update`, pulls a Coursewright release into a course
+  project. `update-from-upstream.sh` settles every file changed on both sides
+  whole, usually to upstream, so a course's own edits to a tooling file (an
+  extra command, a `package.json` script, an ignore-file entry) vanish without a
+  word, and upstream's changes to the protected files never arrive at all. The
+  skill reads the release first and predicts each conflict, then runs the script
+  and re-applies the dropped hunks rather than restoring whole files. It carries
+  template changes into `AGENTS.md`, `context/` and the other protected files,
+  fixes what the release's new rules flag in `course/`, runs every check and
+  commits at the points approved in its proposal. A bundled script,
+  `scripts/upstream-drift.js`, reports the files that still differ from upstream
+  outside the protected paths, plus the protected entries upstream's
+  `update-from-upstream.conf` has and the local one lacks.
+
 ## 1.7.1 (2026-11-04)
 
 - `.node-version` and `.tool-versions` pin Node 26.13.0, the current LTS

@@ -98,7 +98,8 @@ the skill or let the assistant activate it from your request.
 They share the same safety behaviour, so it is stated here once: skills that
 write anything substantial propose a design first and stop for your approval;
 checking skills report findings and never auto-fix without confirmation; and no
-skill commits to git (except `/commit`, whose whole job that is).
+skill commits to git, except `/commit`, whose whole job that is, and
+`/upstream-update`, which commits at the points you approved in its proposal.
 
 ### Writing Style
 
@@ -304,6 +305,16 @@ project whitelist.
   the document's headings at runtime, so it fills a section still on `TODO` or
   replaces a fact the conversation overtook, and never reorders the sections.
   Writing-style corrections it notices go to `/writing-style-update` instead.
+- **`/upstream-update`** pulls a new Coursewright release into your course. It
+  reads the release, predicts how `update-from-upstream.sh` will settle each
+  conflict, and proposes the whole update for approval: which local edits to
+  tooling files the merge will drop and how to put them back, what upstream
+  changed in the files the script protects (`AGENTS.md`, the guide templates)
+  and how to carry it into your copies, and what the release's new rules flag in
+  `course/`. Then it runs the script, re-applies the dropped edits, runs every
+  check and commits at the points you approved. It never pushes. A bundled drift
+  report lists every file that still differs from upstream outside the protected
+  paths.
 - **`/commit`** makes committing safer and more consistent: it reviews the
   changes, stages the appropriate files, and creates a commit following the
   project conventions: imperative, present tense, verb-first summaries (`Add`,
