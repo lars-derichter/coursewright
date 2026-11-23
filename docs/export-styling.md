@@ -228,6 +228,15 @@ The Thomas More style also turns off justification inside table cells: its body
 text is justified, and a narrow cell stretched its spaces and hyphenated its
 words.
 
+Both Typst templates give a fill-in table room to write in. A body row whose
+cells are all empty is a row for the student to fill in, in a trace table for
+instance, and Typst sized each of those cells to its padding alone, so the table
+came out a few millimetres across. Every cell in such a row is now at least 3.5
+cm wide and 8 mm high, which widens its column too. A row with any content keeps
+its natural size: a data table with the odd blank cell is left alone, and so is
+a table with merged cells, where the template cannot tell rows apart. The DOCX
+export leaves empty cells to Word.
+
 ## Page Breaks in the PDF
 
 Both shipped templates decide where a page may break with three rules:

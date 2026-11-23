@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- A fill-in table in a PDF export now has room to write in. A body row whose
+  cells are all empty, such as the rows of a trace table for a loop, gets cells
+  at least 3.5 cm wide and 8 mm high, in both the generic and the Thomas More
+  style. Typst used to size those cells to their padding alone, so the table
+  came out a few millimetres across with no room for a pen. A row with any
+  content keeps its natural size, so a data table with the odd blank cell
+  renders exactly as before, and the DOCX export is unchanged. See
+  [Export Styling](docs/export-styling.md#tables).
+
 ## 1.8.0 (2026-11-21)
 
 - A new skill, `/upstream-update`, pulls a Coursewright release into a course

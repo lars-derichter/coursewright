@@ -223,6 +223,37 @@ $endif$
   // Body text is justified; a narrow cell would stretch its spaces and
   // hyphenate its words, so cells stay ragged-right.
   show table.cell: set par(justify: false)
+  // A body row whose cells are all empty is a row to write in (a trace table,
+  // a fill-in exercise): give each of its cells room for handwriting rather
+  // than letting it collapse to the inset. A data table with the odd blank
+  // cell has no such row and keeps its natural size, and so does a table with
+  // merged cells, where rows cannot be told apart this simply.
+  show table: it => {
+    let ncols = if type(it.columns) == int { it.columns }
+      else if type(it.columns) == array { it.columns.len() }
+      else { 1 }
+    let header-rows = 0
+    let cells = ()
+    for child in it.children {
+      if child.func() == table.header {
+        header-rows += calc.ceil(child.children.len() / ncols)
+      } else if child.func() == table.cell {
+        cells.push(child)
+      }
+    }
+    let merged = c => c.at("colspan", default: 1) != 1 or c.at("rowspan", default: 1) != 1
+    if cells.any(merged) { return it }
+    let writing-rows = range(calc.ceil(cells.len() / ncols))
+      .filter(r => cells
+        .slice(r * ncols, calc.min((r + 1) * ncols, cells.len()))
+        .all(c => c.body == []))
+      .map(r => r + header-rows)
+    if writing-rows.len() == 0 { return it }
+    show table.cell: c => if c.y in writing-rows {
+      block(width: 3.5cm, height: 8mm)
+    } else { c }
+    it
+  }
 
   show figure.where(kind: table): set figure.caption(position: top)
   show figure.where(kind: image): set figure.caption(position: bottom)
