@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.1 (2026-11-23)
 
 - A fill-in table in a PDF export now has room to write in. A body row whose
   cells are all empty, such as the rows of a trace table for a loop, gets cells
